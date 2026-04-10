@@ -143,7 +143,7 @@
   </div>
   <p class="src">
     Wind: Open-Meteo UKMO <span class="data-badge badge-om">OM</span>
-    · Waves: Stormglass <span class="data-badge badge-sg">SG</span>
+    · Waves (Saunton &amp; Rest Bay): Stormglass <span class="data-badge badge-sg">SG</span>
     · Tides: ADMIRALTY UKHO <span class="data-badge badge-ad">AD</span>
   </p>
 </div>
@@ -931,13 +931,17 @@ function openPop(sid,di){
     pcell('Sea temp',c.waves&&c.waves.seaTemp!=null?Math.round(c.waves.seaTemp)+'°C':'—','','')+
     pcell('Rain chance',c.precip!=null?Math.round(c.precip)+'%':'—','','');
 
-  // Waves (Stormglass)
+  // Waves (Stormglass — Saunton & Rest Bay only)
   var w=c.waves||{};
   var whFt=mToFt(w.waveHeight),swFt=mToFt(w.swellHeight);
-  document.getElementById('popWaves').innerHTML=
-    pcell('Wave height',whFt!=null?Math.round(whFt)+'ft':'—',w.waveHeight!=null?'('+w.waveHeight.toFixed(2)+'m)':'')+
-    pcell('Swell',swFt!=null?Math.round(swFt)+'ft':'—',w.swellPeriod!=null?w.swellPeriod.toFixed(0)+'s period':'')+
-    pcell('Swell dir',d2dir(w.swellDir),'','' );
+  if(sid==='weston'){
+    document.getElementById('popWaves').innerHTML='<div style="font-size:12px;color:#bbb;padding:6px 0">Wave height not tracked for Weston — wind conditions are the key factor here.</div>';
+  } else {
+    document.getElementById('popWaves').innerHTML=
+      pcell('Wave height',whFt!=null?Math.round(whFt)+'ft':'—',w.waveHeight!=null?'('+w.waveHeight.toFixed(2)+'m)':'')+
+      pcell('Swell',swFt!=null?Math.round(swFt)+'ft':'—',w.swellPeriod!=null?w.swellPeriod.toFixed(0)+'s period':'')+
+      pcell('Swell dir',d2dir(w.swellDir),'','');
+  }
 
   // Tides (ADMIRALTY)
   var dusk=c.duskMins||1080;
@@ -998,11 +1002,9 @@ function init(){
   fetches.push(fetchWx({id:'saunton_kite',lat:51.1059, lon:-4.2178}));
   fetches.push(fetchWx({id:'restbay',     lat:51.4878, lon:-3.7127}));
 
-  // Waves: Stormglass (uses 10 requests/day — 3 spots = 3 requests)
+  // Waves: Stormglass — Saunton and Rest Bay only (saves requests, Weston wave height irrelevant for kiting)
   fetches.push(fetchSG({id:'saunton_kite',lat:51.1059, lon:-4.2178}));
   fetches.push(fetchSG({id:'restbay',     lat:51.4878, lon:-3.7127}));
-  // Weston wave data not needed for scoring (kite) but nice for popup
-  fetches.push(fetchSG({id:'weston',      lat:51.346,  lon:-2.9878}));
 
   // Tides: ADMIRALTY via proxy
   fetches.push(fetchTides('weston',  AD_STATIONS.weston));
