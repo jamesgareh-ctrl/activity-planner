@@ -308,23 +308,15 @@ function scoreWeston(data,duskMins){
   breakdown.push({label:'Tide (HW 09:00–dusk)',score:tideScore,max:25,note:tideNote});
   total+=tideScore; weight+=25;
 
-  // Wind: all values read at exact HW hour
-  var windWindowLabel;
-  var wsKmh,gustKmh,wdDeg;
-  if(bestHW&&bestHW.hourIdx!=null){
-    var hi=bestHW.hourIdx;
-    wsKmh  = data.wsArr   && data.wsArr[hi]   != null ? data.wsArr[hi]   : null;
-    wdDeg  = data.wdArr   && data.wdArr[hi]   != null ? data.wdArr[hi]   : null;
-    gustKmh= data.gustArr && data.gustArr[hi] != null ? data.gustArr[hi] : null;
-    windWindowLabel='at HW ~'+bestHW.timeStr;
-  } else {
-    var mid=data.middayIdx;
-    wsKmh  = data.wsArr   && data.wsArr[mid]   != null ? data.wsArr[mid]   : null;
-    wdDeg  = data.wdArr   && data.wdArr[mid]   != null ? data.wdArr[mid]   : null;
-    gustKmh= data.gustArr && data.gustArr[mid] != null ? data.gustArr[mid] : null;
-    windWindowLabel='at midday (no qualifying HW)';
-  }
-  var wsMph=toMph(wsKmh);
+  // Wind: read at 13:00 local time (most likely session time at Weston)
+  // This gives a consistent, comparable reading matching XCWeather's 13:00 slot
+  var dayBase = Math.floor(data.middayIdx / 24) * 24;
+  var hi13 = dayBase + 13; // 13:00 index
+  var wsKmh   = data.wsArr   && data.wsArr[hi13]   != null ? data.wsArr[hi13]   : null;
+  var wdDeg   = data.wdArr   && data.wdArr[hi13]   != null ? data.wdArr[hi13]   : null;
+  var gustKmh = data.gustArr && data.gustArr[hi13] != null ? data.gustArr[hi13] : null;
+  var windWindowLabel = 'at 13:00' + (bestHW ? ' (HW ~' + bestHW.timeStr + ')' : '');
+  var wsMph = toMph(wsKmh);
   data._wsKmh=wsKmh; data._gustKmh=gustKmh; data._wdDeg=wdDeg; data._windWindowLabel=windWindowLabel;
 
   // 2. WIND DIRECTION — Weight 25
