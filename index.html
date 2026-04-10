@@ -5,128 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activity Planner</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #111; min-height: 100vh; }
-  .page { max-width: 960px; margin: 0 auto; padding: 24px 12px 48px; }
-
-  /* Header */
-  .hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; gap: 10px; flex-wrap: wrap; }
-  .hdr-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  .hdr-left p { font-size: 13px; color: #888; margin-top: 3px; }
-  .updated { font-size: 11px; color: #aaa; margin-top: 5px; }
-  .refresh-btn { padding: 8px 16px; font-size: 12px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; color: #444; white-space: nowrap; flex-shrink: 0; }
-  .refresh-btn:hover { background: #f5f5f5; }
-  .refresh-btn:disabled { opacity: 0.5; cursor: default; }
-
-  /* Legend */
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
-  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #777; }
-  .leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .leg-divider { width: 1px; height: 14px; background: #ddd; }
-
-  /* Matrix */
-  .matrix-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 580px; }
-  thead th { padding: 0; }
-  .th-spacer { width: 160px; min-width: 140px; }
-  .th-day { text-align: center; padding: 0 2px 10px; min-width: 84px; }
-  .th-day-label { font-size: 13px; font-weight: 600; color: #111; }
-  .th-day-date { font-size: 11px; color: #aaa; margin-top: 2px; }
-  .th-day.is-today .th-day-label { color: #2563eb; }
-  .th-day.is-today .th-day-date { color: #93c5fd; }
-
-  /* Spot label */
-  .spot-row td { padding: 2px; }
-  .spot-label { background: #fff; border-radius: 10px; padding: 11px 13px; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 82px; }
-  .spot-label-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
-  .spot-label-region { font-size: 11px; color: #999; margin-top: 2px; }
-  .activity-pill { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 6px; margin-top: 5px; font-weight: 600; }
-  .pill-kite { background: #dbeafe; color: #1e40af; }
-  .pill-sup  { background: #d1fae5; color: #065f46; }
-
-  /* Score cells */
-  .score-cell { background: #fff; border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 82px; -webkit-tap-highlight-color: transparent; }
-  .score-cell:hover, .score-cell:active { transform: scale(1.05); box-shadow: 0 4px 14px rgba(0,0,0,0.13); z-index: 2; position: relative; }
-  .score-cell.is-today { outline: 2px solid #93c5fd; outline-offset: -2px; border-radius: 10px; }
-  .sc-score { font-size: 26px; font-weight: 800; line-height: 1; }
-  .sc-bar { width: 36px; height: 4px; background: #eee; border-radius: 2px; overflow: hidden; }
-  .sc-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-  .sc-wind { font-size: 10px; color: #bbb; margin-top: 1px; white-space: nowrap; }
-  .sc-dir { font-size: 11px; font-weight: 700; margin-top: 1px; }
-
-  .band-epic { background: #f0fdf4; } .band-epic .sc-score { color: #059669; } .band-epic .sc-fill { background: #059669; }
-  .band-good { background: #eff6ff; } .band-good .sc-score { color: #2563eb; } .band-good .sc-fill { background: #2563eb; }
-  .band-ok   { background: #fffbeb; } .band-ok   .sc-score { color: #d97706; } .band-ok   .sc-fill { background: #d97706; }
-  .band-poor { background: #fafafa; } .band-poor .sc-score { color: #ccc;    } .band-poor .sc-fill { background: #ddd;    }
-
-  .dir-good { color: #059669; }
-  .dir-bad  { color: #dc2626; }
-  .dir-ok   { color: #bbb; }
-
-  /* State */
-  .state-box { padding: 48px 20px; text-align: center; color: #999; font-size: 14px; line-height: 1.8; }
-  .spin { display: inline-block; width: 20px; height: 20px; border: 2px solid #ddd; border-top-color: #888; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .err { color: #c00; }
-  .retry-btn { margin-top: 14px; display: inline-block; padding: 8px 20px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 13px; }
-
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f0f0;color:#111;min-height:100vh}
+  .page{max-width:980px;margin:0 auto;padding:22px 12px 48px}
+  .hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+  .hdr h1{font-size:21px;font-weight:700;letter-spacing:-0.3px}
+  .hdr p{font-size:12px;color:#888;margin-top:3px}
+  .updated{font-size:11px;color:#bbb;margin-top:4px}
+  .refresh-btn{padding:8px 16px;font-size:12px;border:1px solid #ccc;border-radius:8px;cursor:pointer;background:#fff;color:#444;white-space:nowrap;flex-shrink:0}
+  .refresh-btn:hover{background:#f5f5f5}
+  .refresh-btn:disabled{opacity:0.5;cursor:default}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#777}
+  .leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .leg-div{width:1px;height:14px;background:#ddd}
+  .matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:4px;width:100%;min-width:600px}
+  thead th{padding:0}
+  .th-spacer{width:158px;min-width:138px}
+  .th-day{text-align:center;padding:0 2px 10px;min-width:88px}
+  .th-day-label{font-size:13px;font-weight:600;color:#111}
+  .th-day-date{font-size:11px;color:#aaa;margin-top:2px}
+  .th-day.is-today .th-day-label{color:#2563eb}
+  .th-day.is-today .th-day-date{color:#93c5fd}
+  .spot-row td{padding:2px}
+  .spot-label{background:#fff;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;height:100%;min-height:88px}
+  .spot-label-name{font-size:13px;font-weight:600;line-height:1.3}
+  .spot-label-region{font-size:11px;color:#999;margin-top:2px}
+  .activity-pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:6px;margin-top:5px;font-weight:600}
+  .pill-kite{background:#dbeafe;color:#1e40af}
+  .pill-sup{background:#d1fae5;color:#065f46}
+  .score-cell{background:#fff;border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:transform 0.12s ease,box-shadow 0.12s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:88px;-webkit-tap-highlight-color:transparent;position:relative}
+  .score-cell:hover,.score-cell:active{transform:scale(1.05);box-shadow:0 4px 14px rgba(0,0,0,0.13);z-index:2}
+  .score-cell.is-today{outline:2px solid #93c5fd;outline-offset:-2px}
+  .sc-score{font-size:26px;font-weight:800;line-height:1}
+  .sc-bar{width:36px;height:4px;background:#eee;border-radius:2px;overflow:hidden}
+  .sc-fill{height:100%;border-radius:2px}
+  .sc-wind{font-size:10px;color:#bbb;margin-top:1px;white-space:nowrap}
+  .sc-dir{font-size:11px;font-weight:700;margin-top:1px}
+  .band-epic{background:#f0fdf4}.band-epic .sc-score{color:#059669}.band-epic .sc-fill{background:#059669}
+  .band-good{background:#eff6ff}.band-good .sc-score{color:#2563eb}.band-good .sc-fill{background:#2563eb}
+  .band-ok{background:#fffbeb}.band-ok .sc-score{color:#d97706}.band-ok .sc-fill{background:#d97706}
+  .band-poor{background:#fafafa}.band-poor .sc-score{color:#ccc}.band-poor .sc-fill{background:#ddd}
+  .dir-good{color:#059669}
+  .dir-bad{color:#dc2626}
+  .dir-ok{color:#bbb}
+  .state-box{padding:48px 20px;text-align:center;color:#999;font-size:14px;line-height:1.8}
+  .spin{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:#888;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .err{color:#c00}
+  .retry-btn{margin-top:14px;display:inline-block;padding:8px 20px;border:1px solid #ccc;border-radius:8px;cursor:pointer;background:#fff;font-size:13px}
   /* Popover */
-  .pop-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: flex-end; justify-content: center; padding: 0; }
-  .pop-overlay.show { display: flex; }
-  @media (min-width: 500px) { .pop-overlay { align-items: center; padding: 20px; } }
-  .popover { background: #fff; border-radius: 18px 18px 0 0; padding: 20px 20px 32px; width: 100%; max-width: 400px; animation: slideUp 0.2s ease; }
-  @media (min-width: 500px) { .popover { border-radius: 16px; padding: 22px; } }
-  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .pop-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
-  @media (min-width: 500px) { .pop-handle { display: none; } }
-  .pop-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-  .pop-title { font-size: 16px; font-weight: 700; line-height: 1.3; }
-  .pop-subtitle { font-size: 12px; color: #999; margin-top: 2px; }
-  .pop-close { background: #f0f0f0; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; color: #888; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 10px; }
-  .pop-score-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0; }
-  .pop-score-num { font-size: 56px; font-weight: 800; line-height: 1; }
-  .pop-score-label { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
-  .label-epic { background: #f0fdf4; color: #059669; }
-  .label-good { background: #eff6ff; color: #2563eb; }
-  .label-ok   { background: #fffbeb; color: #d97706; }
-  .label-poor { background: #fafafa; color: #aaa; border: 1px solid #eee; }
-  .pop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .pop-cell { background: #f7f7f7; border-radius: 10px; padding: 9px 11px; }
-  .pop-cell-label { font-size: 10px; color: #aaa; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
-  .pop-cell-val { font-size: 15px; font-weight: 700; color: #111; }
-  .pop-cell-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
-  .pop-verdict { font-size: 13px; color: #555; background: #f7f7f7; border-radius: 10px; padding: 11px 13px; line-height: 1.65; }
-
-  .src { font-size: 11px; color: #ccc; margin-top: 20px; text-align: right; }
+  .pop-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:flex-end;justify-content:center}
+  .pop-overlay.show{display:flex}
+  @media(min-width:520px){.pop-overlay{align-items:center;padding:20px}}
+  .popover{background:#fff;border-radius:20px 20px 0 0;padding:18px 18px 36px;width:100%;max-width:440px;animation:slideUp 0.2s ease;overflow-y:auto;max-height:92vh}
+  @media(min-width:520px){.popover{border-radius:16px;padding:22px;max-height:88vh}}
+  @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .pop-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 14px}
+  @media(min-width:520px){.pop-handle{display:none}}
+  .pop-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+  .pop-title{font-size:16px;font-weight:700;line-height:1.3}
+  .pop-subtitle{font-size:12px;color:#999;margin-top:2px}
+  .pop-close{background:#f0f0f0;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;color:#888;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:10px}
+  .pop-score-row{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0}
+  .pop-score-num{font-size:54px;font-weight:800;line-height:1}
+  .pop-score-label{font-size:13px;font-weight:600;padding:4px 12px;border-radius:8px}
+  .label-epic{background:#f0fdf4;color:#059669}
+  .label-good{background:#eff6ff;color:#2563eb}
+  .label-ok{background:#fffbeb;color:#d97706}
+  .label-poor{background:#fafafa;color:#aaa;border:1px solid #eee}
+  .pop-section{margin-bottom:10px}
+  .pop-section-title{font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+  .pop-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+  .pop-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+  .pop-cell{background:#f7f7f7;border-radius:10px;padding:9px 10px}
+  .pop-cell-label{font-size:10px;color:#aaa;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px}
+  .pop-cell-val{font-size:14px;font-weight:700;color:#111}
+  .pop-cell-sub{font-size:11px;color:#bbb;margin-top:2px}
+  .tide-bar-wrap{background:#f7f7f7;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .tide-bar-label{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:8px}
+  .tide-events{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .tide-event{font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
+  .tide-hw{background:#dbeafe;color:#1e40af}
+  .tide-lw{background:#fef3c7;color:#92400e}
+  .tide-range{font-size:12px;color:#555;margin-top:4px}
+  .wx-icon{font-size:22px;margin-bottom:2px}
+  .pop-verdict{font-size:13px;color:#555;background:#f7f7f7;border-radius:10px;padding:11px 13px;line-height:1.65;margin-top:4px}
+  .src{font-size:11px;color:#ccc;margin-top:18px;text-align:right}
+  .data-note{font-size:11px;color:#bbb;margin-top:6px;text-align:center}
 </style>
 </head>
 <body>
 <div class="page">
-
   <div class="hdr">
-    <div class="hdr-left">
+    <div>
       <h1>Activity Planner</h1>
       <p>Kitesurfing &amp; Paddleboarding — 7-day forecast</p>
       <div class="updated" id="updatedAt"></div>
     </div>
     <button class="refresh-btn" id="refreshBtn" onclick="init()">↻ Refresh</button>
   </div>
-
   <div class="legend">
     <div class="leg"><div class="leg-dot" style="background:#059669"></div>Epic (8–10)</div>
     <div class="leg"><div class="leg-dot" style="background:#2563eb"></div>Good (6–7)</div>
     <div class="leg"><div class="leg-dot" style="background:#d97706"></div>Fair (4–5)</div>
     <div class="leg"><div class="leg-dot" style="background:#ccc"></div>Poor (&lt;4)</div>
-    <div class="leg-divider"></div>
-    <div class="leg"><span style="color:#059669;font-weight:700;font-size:11px">NE</span>&nbsp;good dir</div>
-    <div class="leg"><span style="color:#dc2626;font-weight:700;font-size:11px">SW</span>&nbsp;bad dir</div>
+    <div class="leg-div"></div>
+    <div class="leg"><span class="dir-good" style="font-weight:700;font-size:11px">NE</span>&nbsp;good dir</div>
+    <div class="leg"><span class="dir-bad" style="font-weight:700;font-size:11px">SW</span>&nbsp;bad dir</div>
+    <div class="leg" style="color:#bbb">· tap cell for full detail</div>
   </div>
-
   <div id="main" class="matrix-wrap">
     <div class="state-box"><span class="spin"></span>Loading forecast…</div>
   </div>
-
-  <p class="src">Open-Meteo · updated <span id="srcTime">—</span></p>
+  <p class="src">Wind &amp; weather: Open-Meteo · Marine &amp; tides: Open-Meteo Marine API · Tides are modelled estimates</p>
 </div>
 
 <!-- Popover -->
@@ -144,283 +137,339 @@
       <div class="pop-score-num" id="popScoreNum"></div>
       <div class="pop-score-label" id="popScoreLabel"></div>
     </div>
-    <div class="pop-grid" id="popGrid"></div>
+
+    <div class="pop-section">
+      <div class="pop-section-title">Wind</div>
+      <div class="pop-grid" id="popWind"></div>
+    </div>
+
+    <div class="pop-section">
+      <div class="pop-section-title">Conditions</div>
+      <div class="pop-grid" id="popConditions"></div>
+    </div>
+
+    <div class="pop-section">
+      <div class="pop-section-title">Waves &amp; sea</div>
+      <div class="pop-grid-3" id="popWaves"></div>
+    </div>
+
+    <div class="pop-section">
+      <div class="pop-section-title">Tides (modelled)</div>
+      <div class="tide-bar-wrap" id="popTides"></div>
+    </div>
+
     <div class="pop-verdict" id="popVerdict"></div>
   </div>
 </div>
 
 <script>
-var SPOTS = [
-  {
-    id: 'weston', name: 'Weston-super-Mare', region: 'Somerset', activity: 'kite',
-    lat: 51.346, lon: -2.9878,
-    windMin: 15, windIdeal: [18, 32], windMax: 45,
-    goodDirs: ['SW','WSW','W','WNW','NW','S','SSW'],
-    badDirs:  ['E','NE','ENE','N','NNE'],
-    note: 'Large tidal range — best launched 2hrs either side of mid-tide. E/NE winds are offshore.'
-  },
-  {
-    id: 'saunton', name: 'Saunton Sands', region: 'Devon', activity: 'kite',
-    lat: 51.1059, lon: -4.2178,
-    windMin: 15, windIdeal: [18, 32], windMax: 45,
-    goodDirs: ['NE','ENE','E','N','NNE','ESE'],
-    badDirs:  ['SW','WSW','W','SSW'],
-    note: 'NE/E gives ideal cross-shore. SW onshore is dangerous — do not kite.'
-  },
-  {
-    id: 'restbay', name: 'Rest Bay, Porthcawl', region: 'South Wales', activity: 'sup',
-    lat: 51.4878, lon: -3.7127,
-    windMax: 20, windIdeal: [0, 14],
-    goodDirs: ['S','SSW','SW','SE','SSE'],
-    badDirs:  ['NW','N','WNW'],
-    note: 'Sheltered bay — best with light southerly winds. NW funnels in and creates choppy conditions.'
-  }
+var SPOTS=[
+  {id:'weston',name:'Weston-super-Mare',region:'Somerset',activity:'kite',lat:51.346,lon:-2.9878,windMin:15,windIdeal:[18,32],windMax:45,goodDirs:['SW','WSW','W','WNW','NW','S','SSW'],badDirs:['E','NE','ENE','N','NNE'],note:'Large tidal range — best launched 2hrs either side of mid-tide. E/NE winds are offshore.'},
+  {id:'saunton',name:'Saunton Sands',region:'Devon',activity:'kite',lat:51.1059,lon:-4.2178,windMin:15,windIdeal:[18,32],windMax:45,goodDirs:['NE','ENE','E','N','NNE','ESE'],badDirs:['SW','WSW','W','SSW'],note:'NE/E gives ideal cross-shore. SW onshore is dangerous — do not kite.'},
+  {id:'restbay',name:'Rest Bay, Porthcawl',region:'South Wales',activity:'sup',lat:51.4878,lon:-3.7127,windMax:20,windIdeal:[0,14],goodDirs:['S','SSW','SW','SE','SSE'],badDirs:['NW','N','WNW'],note:'Sheltered bay — best with light southerly winds. NW funnels in and creates choppy conditions.'}
 ];
+var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var wxData={},marineData={},comp={};
 
-var DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var MONTHS= ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var wxData = {}, comp = {};
+var WX_CODES={
+  0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+  45:'Fog',48:'Icy fog',
+  51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+  61:'Light rain',63:'Rain',65:'Heavy rain',
+  71:'Light snow',73:'Snow',75:'Heavy snow',
+  77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',
+  85:'Snow showers',86:'Heavy snow showers',
+  95:'Thunderstorm',96:'Thunderstorm+hail',99:'Thunderstorm+heavy hail'
+};
+var WX_ICONS={
+  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+  45:'🌫️',48:'🌫️',
+  51:'🌦️',53:'🌦️',55:'🌧️',
+  61:'🌧️',63:'🌧️',65:'🌧️',
+  71:'🌨️',73:'🌨️',75:'🌨️',
+  77:'🌨️',80:'🌦️',81:'🌧️',82:'⛈️',
+  85:'🌨️',86:'🌨️',
+  95:'⛈️',96:'⛈️',99:'⛈️'
+};
 
-function d2dir(d) {
-  if (d == null) return '—';
-  var a = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  return a[Math.round(d / 22.5) % 16];
+function d2dir(d){if(d==null)return'—';var a=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];return a[Math.round(d/22.5)%16];}
+function bft(k){if(!k||k<2)return'Calm';if(k<12)return'Light';if(k<20)return'Gentle';if(k<29)return'Moderate';if(k<39)return'Fresh';if(k<50)return'Strong';return'Gale+';}
+function fmt1(v){return v!=null?v.toFixed(1):'—';}
+function fmtInt(v){return v!=null?Math.round(v)+'':'—';}
+
+function scoreKite(sp,ws,wd){
+  var s=0,dir=d2dir(wd);
+  if(ws<sp.windMin)s+=Math.max(0,(ws/sp.windMin)*20);
+  else if(ws>=sp.windIdeal[0]&&ws<=sp.windIdeal[1])s+=40;
+  else if(ws<=sp.windMax)s+=25;
+  else s+=5;
+  if(sp.goodDirs.indexOf(dir)>=0)s+=40;
+  else if(sp.badDirs.indexOf(dir)>=0)s+=0;
+  else s+=15;
+  if(ws>=sp.windIdeal[0]&&ws<=sp.windIdeal[1]&&sp.goodDirs.indexOf(dir)>=0)s+=20;
+  return Math.min(10,s/10);
 }
-function bft(k) {
-  if (!k || k < 2) return 'Calm';
-  if (k < 12) return 'Light breeze';
-  if (k < 20) return 'Gentle breeze';
-  if (k < 29) return 'Moderate breeze';
-  if (k < 39) return 'Fresh breeze';
-  if (k < 50) return 'Strong breeze';
-  return 'Gale+';
+function scoreSUP(sp,ws,wd){
+  var s=0,dir=d2dir(wd);
+  if(ws<=sp.windIdeal[1])s+=45;
+  else if(ws<=sp.windMax)s+=25;
+  else s+=Math.max(0,10-(ws-sp.windMax));
+  if(sp.goodDirs.indexOf(dir)>=0)s+=35;
+  else if(sp.badDirs.indexOf(dir)>=0)s+=5;
+  else s+=18;
+  if(ws<=sp.windIdeal[1]&&sp.goodDirs.indexOf(dir)>=0)s+=20;
+  return Math.min(10,s/10);
 }
-function scoreKite(sp, ws, wd) {
-  var s = 0, dir = d2dir(wd);
-  if (ws < sp.windMin)                                       s += Math.max(0, (ws/sp.windMin)*20);
-  else if (ws >= sp.windIdeal[0] && ws <= sp.windIdeal[1])  s += 40;
-  else if (ws <= sp.windMax)                                 s += 25;
-  else                                                       s += 5;
-  if      (sp.goodDirs.indexOf(dir) >= 0) s += 40;
-  else if (sp.badDirs.indexOf(dir)  >= 0) s += 0;
-  else                                    s += 15;
-  if (ws >= sp.windIdeal[0] && ws <= sp.windIdeal[1] && sp.goodDirs.indexOf(dir) >= 0) s += 20;
-  return Math.min(10, s / 10);
-}
-function scoreSUP(sp, ws, wd) {
-  var s = 0, dir = d2dir(wd);
-  if (ws <= sp.windIdeal[1])      s += 45;
-  else if (ws <= sp.windMax)      s += 25;
-  else s += Math.max(0, 10 - (ws - sp.windMax));
-  if      (sp.goodDirs.indexOf(dir) >= 0) s += 35;
-  else if (sp.badDirs.indexOf(dir)  >= 0) s += 5;
-  else                                    s += 18;
-  if (ws <= sp.windIdeal[1] && sp.goodDirs.indexOf(dir) >= 0) s += 20;
-  return Math.min(10, s / 10);
-}
-function getScore(sp, ws, wd) {
-  if (ws == null) return 0;
-  return sp.activity === 'kite' ? scoreKite(sp, ws, wd) : scoreSUP(sp, ws, wd);
-}
-function band(s) {
-  if (s >= 8) return 'band-epic'; if (s >= 6) return 'band-good';
-  if (s >= 4) return 'band-ok';  return 'band-poor';
-}
-function bandColor(s) {
-  if (s >= 8) return '#059669'; if (s >= 6) return '#2563eb';
-  if (s >= 4) return '#d97706'; return '#bbb';
-}
-function bandLabel(s) {
-  if (s >= 8) return ['Epic','label-epic']; if (s >= 6) return ['Good','label-good'];
-  if (s >= 4) return ['Fair','label-ok'];   return ['Poor','label-poor'];
-}
-function makeVerdict(sp, ws, wd, sc) {
-  if (ws == null) return 'No forecast data available.';
-  var dir = d2dir(wd), rws = Math.round(ws);
-  if (sp.activity === 'kite') {
-    var cross = sp.goodDirs.indexOf(dir) >= 0, bad = sp.badDirs.indexOf(dir) >= 0;
-    if (sc >= 8) return rws+' km/h from '+dir+' — ideal conditions. '+sp.note;
-    if (sc >= 6) return rws+' km/h '+dir+'. '+(cross?'Cross-shore direction — good.':bad?'Onshore wind — use caution and know your exit.':'Direction is marginal.')+' '+sp.note;
-    if (sc >= 4) {
-      if (ws < sp.windMin) return 'Too light at '+rws+' km/h — watch for the sea breeze building later. '+sp.note;
-      if (ws > sp.windMax) return 'Too strong at '+rws+' km/h — not safe for most setups. '+sp.note;
-      return 'Marginal — '+dir+' direction is not ideal. '+sp.note;
+function getScore(sp,ws,wd){if(ws==null)return 0;return sp.activity==='kite'?scoreKite(sp,ws,wd):scoreSUP(sp,ws,wd);}
+function band(s){if(s>=8)return'band-epic';if(s>=6)return'band-good';if(s>=4)return'band-ok';return'band-poor';}
+function bandColor(s){if(s>=8)return'#059669';if(s>=6)return'#2563eb';if(s>=4)return'#d97706';return'#bbb';}
+function bandLabel(s){if(s>=8)return['Epic','label-epic'];if(s>=6)return['Good','label-good'];if(s>=4)return['Fair','label-ok'];return['Poor','label-poor'];}
+
+function makeVerdict(sp,data,sc){
+  if(!data||data.ws==null)return'No forecast data available.';
+  var dir=d2dir(data.wd),rws=Math.round(data.ws);
+  var parts=[];
+  if(sp.activity==='kite'){
+    var cross=sp.goodDirs.indexOf(dir)>=0,bad=sp.badDirs.indexOf(dir)>=0;
+    if(sc>=8)parts.push(rws+' km/h from '+dir+' — ideal kite conditions.');
+    else if(sc>=6)parts.push(rws+' km/h '+dir+'. '+(cross?'Cross-shore — good.':bad?'Onshore — use caution, know your exit.':'Direction marginal.'));
+    else if(sc>=4){
+      if(data.ws<sp.windMin)parts.push('Too light at '+rws+' km/h — watch for sea breeze building.');
+      else if(data.ws>sp.windMax)parts.push('Too strong at '+rws+' km/h — unsafe for most setups.');
+      else parts.push('Marginal. '+dir+' direction not ideal.');
+    } else {
+      if(data.ws<sp.windMin)parts.push('No usable wind ('+rws+' km/h).');
+      else if(data.ws>sp.windMax)parts.push('Dangerously strong ('+rws+' km/h). Stay off the water.');
+      else parts.push('Direction ('+dir+') is unsafe here.');
     }
-    if (ws < sp.windMin) return 'No usable wind ('+rws+' km/h). '+sp.note;
-    if (ws > sp.windMax) return 'Dangerously strong at '+rws+' km/h. Stay off the water. '+sp.note;
-    return 'Wind direction ('+dir+') is unsafe here. '+sp.note;
+    if(data.gusts&&data.gusts>data.ws*1.4)parts.push('Gusty conditions — difference between average and gusts is significant.');
+    if(data.airTemp!=null&&data.airTemp<8)parts.push('Cold air ('+Math.round(data.airTemp)+'°C) — full wetsuit recommended.');
+    if(data.tideRange!=null&&sp.id==='weston')parts.push('Tidal range today: '+data.tideRange.toFixed(1)+'m — time your launch carefully.');
   } else {
-    if (sc >= 8) return rws+' km/h from '+dir+' — flat water. Ideal for all abilities. '+sp.note;
-    if (sc >= 6) return rws+' km/h '+dir+'. Light chop — fine for intermediate paddlers. '+sp.note;
-    if (sc >= 4) return (ws > sp.windMax ? 'Returning upwind will be tough at '+rws+' km/h.' : 'Direction ('+dir+') is suboptimal.')+' '+sp.note;
-    return (ws > sp.windMax ? rws+' km/h — too strong for safe paddleboarding.' : 'Conditions unfavourable today.')+' '+sp.note;
+    if(sc>=8)parts.push(rws+' km/h from '+dir+' — flat water. Ideal for all abilities.');
+    else if(sc>=6)parts.push(rws+' km/h '+dir+'. Light chop — fine for intermediates.');
+    else if(sc>=4)parts.push(data.ws>sp.windMax?'Returning upwind tough at '+rws+' km/h.':'Direction ('+dir+') suboptimal.');
+    else parts.push(data.ws>sp.windMax?rws+' km/h — too strong for safe SUP.':'Conditions unfavourable.');
+    if(data.waveHeight!=null&&data.waveHeight>0.8)parts.push('Wave height '+fmt1(data.waveHeight)+'m — expect some swell in the bay.');
+    if(data.seaTemp!=null)parts.push('Sea temp '+Math.round(data.seaTemp)+'°C.');
   }
+  parts.push(sp.note);
+  return parts.join(' ');
 }
 
-function extract(json, di) {
-  if (!json || !json.hourly) return null;
-  var h = json.hourly, b = di * 24 + 11;
-  function avg(arr, i, n) {
-    if (!arr) return null;
-    var sl = arr.slice(i, i+n).filter(function(v){return v!=null;});
-    return sl.length ? sl.reduce(function(a,b){return a+b;},0)/sl.length : null;
-  }
-  return {
-    ws:     avg(h.wind_speed_10m, b, 3),
-    wd:     h.wind_direction_10m  && h.wind_direction_10m[b+1]  != null ? h.wind_direction_10m[b+1]  : null,
-    gusts:  avg(h.wind_gusts_10m, b, 3),
-    temp:   h.temperature_2m      && h.temperature_2m[b]         != null ? h.temperature_2m[b]         : null,
-    precip: avg(h.precipitation_probability, b, 3)
+function avg(arr,i,n){if(!arr)return null;var sl=arr.slice(i,i+n).filter(function(v){return v!=null;});return sl.length?sl.reduce(function(a,b){return a+b;},0)/sl.length:null;}
+
+function extractWeather(json,di){
+  if(!json||!json.hourly)return null;
+  var h=json.hourly,b=di*24+11;
+  return{
+    ws:avg(h.wind_speed_10m,b,3),
+    wd:h.wind_direction_10m&&h.wind_direction_10m[b+1]!=null?h.wind_direction_10m[b+1]:null,
+    gusts:avg(h.wind_gusts_10m,b,3),
+    airTemp:h.temperature_2m&&h.temperature_2m[b]!=null?h.temperature_2m[b]:null,
+    precip:avg(h.precipitation_probability,b,3),
+    wxCode:h.weather_code&&h.weather_code[b]!=null?h.weather_code[b]:null,
+    humidity:h.relative_humidity_2m&&h.relative_humidity_2m[b]!=null?h.relative_humidity_2m[b]:null
   };
 }
 
-function dayInfo(i) {
-  var d = new Date(); d.setDate(d.getDate()+i);
-  return {
-    short: i===0 ? 'Today' : i===1 ? 'Tmrw' : DAYS[d.getDay()],
-    long:  i===0 ? 'Today' : i===1 ? 'Tomorrow' : DAYS[d.getDay()],
-    date:  d.getDate()+' '+MONTHS[d.getMonth()]
+function extractMarine(json,di){
+  if(!json||!json.hourly)return{waveHeight:null,wavePeriod:null,waveDir:null,swellHeight:null,seaTemp:null,tideHigh:null,tideLow:null,tideRange:null};
+  var h=json.hourly,b=di*24+11;
+  var tideSlice=h.sea_level_height_msl?h.sea_level_height_msl.slice(di*24,(di+1)*24).filter(function(v){return v!=null;}):[];
+  var tideHigh=tideSlice.length?Math.max.apply(null,tideSlice):null;
+  var tideLow=tideSlice.length?Math.min.apply(null,tideSlice):null;
+  var tideRange=tideHigh!=null&&tideLow!=null?tideHigh-tideLow:null;
+
+  // Find HW and LW times
+  var tideEvents=[];
+  if(h.sea_level_height_msl){
+    var daySlice=h.sea_level_height_msl.slice(di*24,(di+1)*24);
+    var times=h.time?h.time.slice(di*24,(di+1)*24):[];
+    for(var i=1;i<daySlice.length-1;i++){
+      var prev=daySlice[i-1],curr=daySlice[i],next=daySlice[i+1];
+      if(curr!=null&&prev!=null&&next!=null){
+        if(curr>prev&&curr>next)tideEvents.push({type:'HW',val:curr,time:times[i]||''});
+        else if(curr<prev&&curr<next)tideEvents.push({type:'LW',val:curr,time:times[i]||''});
+      }
+    }
+  }
+
+  return{
+    waveHeight:avg(h.wave_height,b,3),
+    wavePeriod:avg(h.wave_period,b,3),
+    waveDir:h.wave_direction&&h.wave_direction[b]!=null?h.wave_direction[b]:null,
+    swellHeight:avg(h.swell_wave_height,b,3),
+    seaTemp:h.sea_surface_temperature&&h.sea_surface_temperature[b]!=null?h.sea_surface_temperature[b]:null,
+    tideHigh:tideHigh,
+    tideLow:tideLow,
+    tideRange:tideRange,
+    tideEvents:tideEvents
   };
 }
 
-function buildComp() {
-  comp = {};
-  SPOTS.forEach(function(sp) {
-    comp[sp.id] = [];
-    for (var i = 0; i < 7; i++) {
-      var day = extract(wxData[sp.id], i);
-      if (!day) { comp[sp.id].push(null); continue; }
-      comp[sp.id].push({
-        score: getScore(sp, day.ws, day.wd),
-        ws: day.ws, wd: day.wd, gusts: day.gusts, temp: day.temp, precip: day.precip
-      });
+function mergeData(wx,marine){
+  if(!wx)return null;
+  return Object.assign({},wx,marine||{});
+}
+
+function dayInfo(i){
+  var d=new Date();d.setDate(d.getDate()+i);
+  return{short:i===0?'Today':i===1?'Tmrw':DAYS[d.getDay()],long:i===0?'Today':i===1?'Tomorrow':DAYS[d.getDay()],date:d.getDate()+' '+MONTHS[d.getMonth()]};
+}
+
+function buildComp(){
+  comp={};
+  SPOTS.forEach(function(sp){
+    comp[sp.id]=[];
+    for(var i=0;i<7;i++){
+      var wx=extractWeather(wxData[sp.id],i);
+      var mar=extractMarine(marineData[sp.id],i);
+      var merged=mergeData(wx,mar);
+      if(!merged){comp[sp.id].push(null);continue;}
+      merged.score=getScore(sp,merged.ws,merged.wd);
+      comp[sp.id].push(merged);
     }
   });
 }
 
-function render() {
-  var html = '<table><thead><tr><th class="th-spacer"></th>';
-  for (var d = 0; d < 7; d++) {
-    var inf = dayInfo(d);
-    html += '<th class="th-day'+(d===0?' is-today':'')+'">'+
-      '<div class="th-day-label">'+inf.short+'</div>'+
-      '<div class="th-day-date">'+inf.date+'</div></th>';
+function render(){
+  var html='<table><thead><tr><th class="th-spacer"></th>';
+  for(var d=0;d<7;d++){
+    var inf=dayInfo(d);
+    html+='<th class="th-day'+(d===0?' is-today':'')+'"><div class="th-day-label">'+inf.short+'</div><div class="th-day-date">'+inf.date+'</div></th>';
   }
-  html += '</tr></thead><tbody>';
-
-  SPOTS.forEach(function(sp) {
-    var pc = sp.activity==='kite'?'pill-kite':'pill-sup';
-    var pl = sp.activity==='kite'?'Kitesurfing':'Paddleboarding';
-    html += '<tr class="spot-row"><td><div class="spot-label">'+
-      '<div class="spot-label-name">'+sp.name+'</div>'+
-      '<div class="spot-label-region">'+sp.region+'</div>'+
-      '<span class="activity-pill '+pc+'">'+pl+'</span>'+
-      '</div></td>';
-
-    for (var d = 0; d < 7; d++) {
-      var c = comp[sp.id] && comp[sp.id][d];
-      var todayCls = d===0 ? ' is-today' : '';
-      if (!c) {
-        html += '<td><div class="score-cell band-poor'+todayCls+'">'+
-          '<div class="sc-score" style="font-size:16px">—</div></div></td>';
-        continue;
-      }
-      var dir = d2dir(c.wd);
-      var dc = sp.goodDirs.indexOf(dir)>=0?'dir-good':sp.badDirs.indexOf(dir)>=0?'dir-bad':'dir-ok';
-      var rws = c.ws!=null ? Math.round(c.ws) : 0;
-      html += '<td><div class="score-cell '+band(c.score)+todayCls+'" onclick="openPop(\''+sp.id+'\','+d+')">'+
+  html+='</tr></thead><tbody>';
+  SPOTS.forEach(function(sp){
+    var pc=sp.activity==='kite'?'pill-kite':'pill-sup';
+    var pl=sp.activity==='kite'?'Kitesurfing':'Paddleboarding';
+    html+='<tr class="spot-row"><td><div class="spot-label"><div class="spot-label-name">'+sp.name+'</div><div class="spot-label-region">'+sp.region+'</div><span class="activity-pill '+pc+'">'+pl+'</span></div></td>';
+    for(var d=0;d<7;d++){
+      var c=comp[sp.id]&&comp[sp.id][d];
+      var tc=d===0?' is-today':'';
+      if(!c){html+='<td><div class="score-cell band-poor'+tc+'"><div class="sc-score" style="font-size:16px">—</div></div></td>';continue;}
+      var dir=d2dir(c.wd);
+      var dc=sp.goodDirs.indexOf(dir)>=0?'dir-good':sp.badDirs.indexOf(dir)>=0?'dir-bad':'dir-ok';
+      var rws=c.ws!=null?Math.round(c.ws):0;
+      var wxIcon=c.wxCode!=null?(WX_ICONS[c.wxCode]||''):'';
+      html+='<td><div class="score-cell '+band(c.score)+tc+'" onclick="openPop(\''+sp.id+'\','+d+')">'+
+        (wxIcon?'<div style="font-size:14px;line-height:1">'+wxIcon+'</div>':'')+
         '<div class="sc-score">'+c.score.toFixed(1)+'</div>'+
         '<div class="sc-bar"><div class="sc-fill" style="width:'+Math.round(c.score*10)+'%"></div></div>'+
         '<div class="sc-wind">'+rws+' km/h</div>'+
         '<div class="sc-dir '+dc+'">'+dir+'</div>'+
         '</div></td>';
     }
-    html += '</tr>';
+    html+='</tr>';
   });
-  html += '</tbody></table>';
-  document.getElementById('main').innerHTML = html;
-
-  var now = new Date();
-  var timeStr = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('updatedAt').textContent = 'Updated '+timeStr;
-  document.getElementById('srcTime').textContent = timeStr;
+  html+='</tbody></table>';
+  document.getElementById('main').innerHTML=html;
+  var now=new Date();
+  var t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('updatedAt').textContent='Updated '+t;
 }
 
-function openPop(sid, di) {
-  var sp = SPOTS.filter(function(s){return s.id===sid;})[0];
-  var c  = comp[sid] && comp[sid][di];
-  if (!c) return;
-  var inf = dayInfo(di), dir = d2dir(c.wd), sc = c.score;
-  var bl  = bandLabel(sc);
+function pc(lbl,val,sub){
+  return'<div class="pop-cell"><div class="pop-cell-label">'+lbl+'</div><div class="pop-cell-val">'+val+'</div>'+(sub?'<div class="pop-cell-sub">'+sub+'</div>':'')+'</div>';
+}
 
-  document.getElementById('popTitle').textContent    = sp.name;
-  document.getElementById('popSubtitle').textContent = inf.long+' · '+inf.date;
+function openPop(sid,di){
+  var sp=SPOTS.filter(function(s){return s.id===sid;})[0];
+  var c=comp[sid]&&comp[sid][di];if(!c)return;
+  var inf=dayInfo(di),dir=d2dir(c.wd),sc=c.score;
+  var bl=bandLabel(sc);
 
-  var sn = document.getElementById('popScoreNum');
-  sn.textContent = sc.toFixed(1); sn.style.color = bandColor(sc);
+  document.getElementById('popTitle').textContent=sp.name;
+  document.getElementById('popSubtitle').textContent=inf.long+' · '+inf.date;
+  var sn=document.getElementById('popScoreNum');sn.textContent=sc.toFixed(1);sn.style.color=bandColor(sc);
+  var sl=document.getElementById('popScoreLabel');sl.textContent=bl[0];sl.className='pop-score-label '+bl[1];
 
-  var sl = document.getElementById('popScoreLabel');
-  sl.textContent = bl[0]; sl.className = 'pop-score-label '+bl[1];
+  // Wind
+  var rws=c.ws!=null?Math.round(c.ws)+' km/h':'—';
+  var gust=c.gusts!=null?Math.round(c.gusts)+' km/h':'—';
+  document.getElementById('popWind').innerHTML=
+    pc('Average wind',rws,dir+' · '+bft(c.ws||0))+
+    pc('Gusts',gust,'peak midday');
 
-  var rws   = c.ws    != null ? Math.round(c.ws)    +' km/h' : '—';
-  var gusts = c.gusts != null ? Math.round(c.gusts) +' km/h' : '—';
-  var temp  = c.temp  != null ? Math.round(c.temp)  +'°C'    : '—';
-  var prec  = c.precip!= null ? Math.round(c.precip)+'%'     : '—';
+  // Conditions
+  var wxDesc=c.wxCode!=null?((WX_ICONS[c.wxCode]||'')+' '+(WX_CODES[c.wxCode]||'Code '+c.wxCode)):'—';
+  var airT=c.airTemp!=null?Math.round(c.airTemp)+'°C':'—';
+  var rain=c.precip!=null?Math.round(c.precip)+'%':'—';
+  var seaT=c.seaTemp!=null?Math.round(c.seaTemp)+'°C':'—';
+  document.getElementById('popConditions').innerHTML=
+    pc('Weather',wxDesc,'')+
+    pc('Air temp',airT,'Rain: '+rain)+
+    pc('Sea temp',seaT,'')+
+    pc('Rain chance',rain,'');
 
-  function pc(lbl,val,sub) {
-    return '<div class="pop-cell"><div class="pop-cell-label">'+lbl+'</div>'+
-      '<div class="pop-cell-val">'+val+'</div>'+
-      (sub?'<div class="pop-cell-sub">'+sub+'</div>':'')+
-      '</div>';
+  // Waves
+  var wh=c.waveHeight!=null?fmt1(c.waveHeight)+'m':'—';
+  var wp=c.wavePeriod!=null?Math.round(c.wavePeriod)+'s':'—';
+  var sw=c.swellHeight!=null?fmt1(c.swellHeight)+'m':'—';
+  var wdir=c.waveDir!=null?d2dir(c.waveDir):'—';
+  document.getElementById('popWaves').innerHTML=
+    pc('Wave height',wh,'dir: '+wdir)+
+    pc('Wave period',wp,'longer=cleaner')+
+    pc('Swell height',sw,'');
+
+  // Tides
+  var tideHTML='';
+  if(c.tideEvents&&c.tideEvents.length){
+    tideHTML+='<div class="pop-cell-label">High &amp; low water</div><div class="tide-events">';
+    c.tideEvents.slice(0,4).forEach(function(ev){
+      var timeStr=ev.time?ev.time.split('T')[1].substring(0,5):'—';
+      tideHTML+='<span class="tide-event '+(ev.type==='HW'?'tide-hw':'tide-lw')+'">'+ev.type+' '+timeStr+' ('+ev.val.toFixed(1)+'m)</span>';
+    });
+    tideHTML+='</div>';
+  } else {
+    tideHTML+='<div class="pop-cell-label">Tide data</div><div style="font-size:12px;color:#bbb;margin-top:4px">Modelled tide data unavailable for this location</div>';
   }
-  document.getElementById('popGrid').innerHTML =
-    pc('Wind', rws, dir+' · '+bft(c.ws||0)) +
-    pc('Gusts', gusts, 'midday peak') +
-    pc('Temperature', temp, '') +
-    pc('Rain chance', prec, '');
+  if(c.tideRange!=null){
+    tideHTML+='<div class="tide-range">Tidal range today: <strong>'+c.tideRange.toFixed(1)+'m</strong>'+(sp.id==='weston'?' — large range, plan your launch window carefully':'')+'</div>';
+  }
+  document.getElementById('popTides').innerHTML=tideHTML;
 
-  document.getElementById('popVerdict').textContent = makeVerdict(sp, c.ws, c.wd, sc);
+  document.getElementById('popVerdict').textContent=makeVerdict(sp,c,sc);
   document.getElementById('popOverlay').classList.add('show');
 }
 
-function closePop() {
-  document.getElementById('popOverlay').classList.remove('show');
-}
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('popOverlay')) closePop();
-}
+function closePop(){document.getElementById('popOverlay').classList.remove('show');}
+function handleOverlayClick(e){if(e.target===document.getElementById('popOverlay'))closePop();}
 
-function fetchSpot(sp) {
-  return new Promise(function(resolve) {
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude='+sp.lat+
-      '&longitude='+sp.lon+
-      '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,precipitation_probability'+
+function fetchWeather(sp){
+  return new Promise(function(resolve){
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+sp.lat+'&longitude='+sp.lon+
+      '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,precipitation_probability,weather_code,relative_humidity_2m'+
       '&wind_speed_unit=kmh&timezone=Europe%2FLondon&forecast_days=7';
-    fetch(url)
-      .then(function(r){return r.json();})
-      .then(function(j){wxData[sp.id]=j; resolve();})
-      .catch(function(){wxData[sp.id]=null; resolve();});
+    fetch(url).then(function(r){return r.json();}).then(function(j){wxData[sp.id]=j;resolve();}).catch(function(){wxData[sp.id]=null;resolve();});
   });
 }
 
-function init() {
-  var btn = document.getElementById('refreshBtn');
-  btn.disabled = true; btn.textContent = '↻ Loading…';
-  document.getElementById('main').innerHTML =
-    '<div class="state-box"><span class="spin"></span>Fetching forecast…</div>';
+function fetchMarine(sp){
+  return new Promise(function(resolve){
+    var url='https://marine-api.open-meteo.com/v1/marine?latitude='+sp.lat+'&longitude='+sp.lon+
+      '&hourly=wave_height,wave_period,wave_direction,swell_wave_height,sea_surface_temperature,sea_level_height_msl'+
+      '&timezone=Europe%2FLondon&forecast_days=7';
+    fetch(url).then(function(r){return r.json();}).then(function(j){marineData[sp.id]=j;resolve();}).catch(function(){marineData[sp.id]=null;resolve();});
+  });
+}
 
-  Promise.all(SPOTS.map(fetchSpot)).then(function() {
-    btn.disabled = false; btn.textContent = '↻ Refresh';
-    if (!SPOTS.some(function(s){return wxData[s.id]!=null;})) {
-      document.getElementById('main').innerHTML =
-        '<div class="state-box err">Could not load forecast.<br>Check your connection and try again.<br>'+
-        '<span class="retry-btn" onclick="init()">Try again</span></div>';
+function init(){
+  var btn=document.getElementById('refreshBtn');
+  btn.disabled=true;btn.textContent='↻ Loading…';
+  document.getElementById('main').innerHTML='<div class="state-box"><span class="spin"></span>Fetching forecast…</div>';
+  var fetches=[];
+  SPOTS.forEach(function(sp){fetches.push(fetchWeather(sp));fetches.push(fetchMarine(sp));});
+  Promise.all(fetches).then(function(){
+    btn.disabled=false;btn.textContent='↻ Refresh';
+    if(!SPOTS.some(function(s){return wxData[s.id]!=null;})){
+      document.getElementById('main').innerHTML='<div class="state-box err">Could not load forecast.<br>Check your connection.<br><span class="retry-btn" onclick="init()">Try again</span></div>';
       return;
     }
-    buildComp(); render();
+    buildComp();render();
   });
 }
-
 init();
 </script>
 </body>
