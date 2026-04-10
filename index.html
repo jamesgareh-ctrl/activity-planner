@@ -51,9 +51,7 @@
   .band-poor{background:#fafafa}.band-poor .sc-score{color:#ccc}.band-poor .sc-fill{background:#ddd}
   .band-no{background:#fff5f5}
   .dir-good{color:#059669}.dir-ok{color:#d97706}.dir-bad{color:#dc2626}.dir-neutral{color:#bbb}
-  /* Section divider row */
-  .section-row td{padding:8px 2px 2px;font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px}
-  /* Popover */
+  .section-row td{padding:10px 4px 2px;font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px}
   .pop-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:flex-end;justify-content:center}
   .pop-overlay.show{display:flex}
   @media(min-width:520px){.pop-overlay{align-items:center;padding:20px}}
@@ -98,15 +96,14 @@
   .sb-poor{background:#fafafa;color:#aaa;border:1px solid #eee}
   .sb-no{background:#fff5f5;color:#dc2626}
   .tide-wrap{background:#f7f7f7;border-radius:10px;padding:12px 13px;margin-bottom:10px}
-  .tide-modelled{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .tide-events{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
   .tide-event{font-size:12px;padding:4px 10px;border-radius:6px;font-weight:600}
   .tide-hw{background:#dbeafe;color:#1e40af}
   .tide-lw{background:#fef3c7;color:#92400e}
   .tide-hw.tide-good{background:#bbf7d0;color:#065f46}
   .tide-hw.tide-bad{background:#fecaca;color:#991b1b}
-  .tide-range-row{font-size:12px;color:#555;margin-bottom:8px}
-  .tide-disclaimer{font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.5}
-  .tide-link{display:flex;align-items:center;justify-content:center;padding:9px 14px;background:#1e40af;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;gap:6px}
+  .tide-disclaimer{font-size:11px;color:#aaa;margin:6px 0 10px;line-height:1.5}
+  .tide-link{display:flex;align-items:center;justify-content:center;padding:9px 14px;background:#1e40af;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none}
   .tide-link:hover{background:#1d3a8a}
   .wind-window-note{font-size:11px;color:#888;margin-top:8px;font-style:italic}
   .pop-verdict{font-size:13px;color:#555;background:#f7f7f7;border-radius:10px;padding:11px 13px;line-height:1.65;margin-top:4px}
@@ -116,6 +113,10 @@
   .err{color:#c00}
   .retry-btn{margin-top:14px;display:inline-block;padding:8px 20px;border:1px solid #ccc;border-radius:8px;cursor:pointer;background:#fff;font-size:13px}
   .src{font-size:11px;color:#ccc;margin-top:18px;text-align:right}
+  .data-badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;font-weight:600}
+  .badge-sg{background:#fef3c7;color:#92400e}
+  .badge-om{background:#e0f2fe;color:#075985}
+  .badge-ad{background:#f0fdf4;color:#065f46}
 </style>
 </head>
 <body>
@@ -135,12 +136,16 @@
     <div class="leg"><div class="leg-dot" style="background:#ccc"></div>Poor (&lt;4)</div>
     <div class="leg"><div class="leg-dot" style="background:#fca5a5"></div>NO-GO</div>
     <div class="leg-div"></div>
-    <div class="leg" style="color:#bbb">· tap cell for detail</div>
+    <div class="leg" style="color:#bbb">· tap for detail</div>
   </div>
   <div id="main" class="matrix-wrap">
     <div class="state-box"><span class="spin"></span>Loading forecast…</div>
   </div>
-  <p class="src">Wind &amp; weather: Open-Meteo · Tides: modelled estimate · Tap popup for official ADMIRALTY tide times</p>
+  <p class="src">
+    Wind: Open-Meteo UKMO <span class="data-badge badge-om">OM</span>
+    · Waves: Stormglass <span class="data-badge badge-sg">SG</span>
+    · Tides: ADMIRALTY UKHO <span class="data-badge badge-ad">AD</span>
+  </p>
 </div>
 
 <div class="pop-overlay" id="popOverlay" onclick="handleOverlayClick(event)">
@@ -161,60 +166,49 @@
       <div class="pop-grid" id="popWind"></div>
     </div>
     <div class="pop-section"><div class="pop-section-title">Conditions</div><div class="pop-grid" id="popConditions"></div></div>
-    <div class="pop-section"><div class="pop-section-title">Waves &amp; sea</div><div class="pop-grid-3" id="popWaves"></div></div>
-    <div class="pop-section"><div class="pop-section-title">Tides</div><div class="tide-wrap" id="popTides"></div></div>
+    <div class="pop-section"><div class="pop-section-title">Waves &amp; swell <span class="data-badge badge-sg">Stormglass</span></div><div class="pop-grid-3" id="popWaves"></div></div>
+    <div class="pop-section"><div class="pop-section-title">Tides <span class="data-badge badge-ad">ADMIRALTY</span></div><div class="tide-wrap" id="popTides"></div></div>
     <div class="pop-verdict" id="popVerdict"></div>
   </div>
 </div>
 
 <script>
-// ── Wave height conversion ────────────────────────────────
-// Open-Meteo gives significant wave height (Hs) in metres
-// "what you see on the beach" ≈ Hs * 1.5 (face height approx)
-// 2ft ≈ 0.6m Hs, 3ft ≈ 0.9m Hs, 5ft ≈ 1.5m Hs
-function mToFt(m){ return m!=null?m*3.281:null; }
-// Significant wave height to approximate face height in feet
-function hsToFaceFt(m){ return m!=null?m*3.281:null; }
+// ── Config ────────────────────────────────────────────────
+var PROXY      = 'https://restless-voice-367a.james-gareh.workers.dev';
+var SG_KEY     = '3401cf78-3523-11f1-9fff-0242ac120004-3401d00e-3523-11f1-9fff-0242ac120004';
+var AD_KEY     = 'c0f36924b48c4d0b9de9df5c1eae0200';
 
-// ── EasyTide links ────────────────────────────────────────
-var EASYTIDE={
+var EASYTIDE = {
   weston:       'https://easytide.admiralty.co.uk/?PortID=0527',
   saunton_kite: 'https://easytide.admiralty.co.uk/?PortID=0535',
   saunton_sup:  'https://easytide.admiralty.co.uk/?PortID=0535',
   restbay:      'https://easytide.admiralty.co.uk/?PortID=0512'
 };
 
+var AD_STATIONS = {
+  weston:  '0527',
+  saunton: '0535',
+  restbay: '0512'
+};
+
 // ── Spots ─────────────────────────────────────────────────
-var SPOTS=[
-  {
-    id:'weston', name:'Weston-super-Mare', region:'Somerset', activity:'kite',
-    lat:51.346, lon:-2.9878, scoring:'weston',
-    easyTideId:'weston'
-  },
-  {
-    id:'saunton_kite', name:'Saunton Sands', region:'Devon — Kitesurfing', activity:'kite',
-    lat:51.1059, lon:-4.2178, scoring:'saunton_kite',
-    easyTideId:'saunton_kite'
-  },
-  {
-    id:'saunton_sup', name:'Saunton Sands', region:'Devon — Paddleboarding', activity:'sup',
-    lat:51.1059, lon:-4.2178, scoring:'saunton_sup',
-    easyTideId:'saunton_sup'
-  },
-  {
-    id:'restbay', name:'Rest Bay, Porthcawl', region:'South Wales', activity:'sup',
-    lat:51.4878, lon:-3.7127, scoring:'restbay',
-    easyTideId:'restbay'
-  }
+var SPOTS = [
+  { id:'weston',      name:'Weston-super-Mare', region:'Somerset',           activity:'kite', lat:51.346,  lon:-2.9878, scoring:'weston'      },
+  { id:'saunton_kite',name:'Saunton Sands',     region:'Devon — Kite',       activity:'kite', lat:51.1059, lon:-4.2178, scoring:'saunton_kite' },
+  { id:'saunton_sup', name:'Saunton Sands',     region:'Devon — SUP',        activity:'sup',  lat:51.1059, lon:-4.2178, scoring:'saunton_sup'  },
+  { id:'restbay',     name:'Rest Bay Porthcawl',region:'South Wales',        activity:'sup',  lat:51.4878, lon:-3.7127, scoring:'restbay'      }
 ];
 
-var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var WX_CODES={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm+hail',99:'Thunderstorm+heavy hail'};
-var WX_ICONS={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'🌨️',77:'🌨️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+var DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var WX_CODES = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm'};
+var WX_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️'};
 
 // ── Helpers ───────────────────────────────────────────────
 function toMph(kmh){ return kmh!=null?kmh*0.621371:null; }
+function msToMph(ms){ return ms!=null?ms*2.23694:null; }
+function mToFt(m){ return m!=null?m*3.281:null; }
+
 function d2dir(d){
   if(d==null)return'—';
   var a=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -222,8 +216,8 @@ function d2dir(d){
 }
 function bft(kmh){
   if(!kmh||kmh<2)return'Calm';
-  if(kmh<20)return'Light–Gentle'; if(kmh<39)return'Moderate–Fresh';
-  if(kmh<62)return'Strong–Gale'; return'Storm';
+  if(kmh<20)return'Light'; if(kmh<39)return'Moderate–Fresh';
+  if(kmh<62)return'Strong'; return'Gale+';
 }
 function avgArr(arr,i,n){
   if(!arr)return null;
@@ -245,16 +239,13 @@ function estimateDusk(lat,dateOffset){
   var ha=Math.acos(-Math.tan(latR)*Math.tan(decl))*180/Math.PI;
   return Math.round((12+ha/15)*60);
 }
-function minsToTime(m){
-  var h=Math.floor(m/60),mn=m%60;
-  return h.toString().padStart(2,'0')+':'+(mn<10?'0':'')+mn;
-}
+function minsToTime(m){ var h=Math.floor(m/60),mn=m%60; return h.toString().padStart(2,'0')+':'+(mn<10?'0':'')+mn; }
+function isBST(){ var d=new Date(); return d.getTimezoneOffset()<Math.max(new Date(d.getFullYear(),0,1).getTimezoneOffset(),new Date(d.getFullYear(),6,1).getTimezoneOffset()); }
 
-// ── Shared: temp & weather score ──────────────────────────
-// Returns {score, max:15, note}
-function scoreTempWeather(airTemp, wxCode){
+// ── Shared scoring helpers ────────────────────────────────
+function scoreTempWeather(airTemp,wxCode){
   var tempBase=airTemp!=null?(airTemp>=15?10:airTemp>=10?5:0):0;
-  var wxBonus=0, wxNote='';
+  var wxBonus=0,wxNote='';
   if(wxCode!=null){
     if(wxCode<=2){wxBonus=5;wxNote='Clear/sunny';}
     else if(wxCode===3){wxBonus=4;wxNote='Overcast';}
@@ -268,72 +259,196 @@ function scoreTempWeather(airTemp, wxCode){
   return{score:score,max:15,note:note};
 }
 
-// ── Shared: gust steadiness score ────────────────────────
-function scoreGusts(wsKmh, gustKmh){
-  if(wsKmh==null||gustKmh==null)return{score:0,max:10,note:'—'};
-  var diffMph=toMph(gustKmh-wsKmh);
-  var score=0,note='';
-  if(diffMph<5){score=10;note=Math.round(diffMph)+' mph diff — very steady';}
-  else if(diffMph<8){score=8;note=Math.round(diffMph)+' mph diff — steady';}
-  else if(diffMph<12){score=5;note=Math.round(diffMph)+' mph diff — moderate gusts';}
-  else if(diffMph<18){score=2;note=Math.round(diffMph)+' mph diff — gusty';}
-  else{score=0;note=Math.round(diffMph)+' mph diff — very gusty';}
-  return{score:score,max:10,note:note};
+// Find nearest LW in tideEvents, return {hourIdx, timeStr, diff}
+function findNearestLW(tideEvents, refMins){
+  var lwEvs=(tideEvents||[]).filter(function(e){return e.type==='LW';});
+  var best=null,bestDiff=9999;
+  lwEvs.forEach(function(ev){
+    if(ev.hourIdx==null)return;
+    var diff=Math.abs(ev.timeMins-(refMins||720));
+    if(diff<bestDiff){bestDiff=diff;best=ev;}
+  });
+  return best?{ev:best,diff:bestDiff}:null;
 }
 
-// ── Weston Kite Scoring ───────────────────────────────────
-function scoreWeston(data,duskMins){
+// Extract wind at specific indices from wx arrays
+function windAtIdx(data, indices){
+  return{
+    ws:  avgIdx(data.wsArr,  indices),
+    wd:  avgIdx(data.wdArr,  indices),
+    gust:avgIdx(data.gustArr,indices)
+  };
+}
+
+// ── Data stores ───────────────────────────────────────────
+var wxData={}, sgData={}, tideData={}, comp={};
+
+// ── FETCH: Open-Meteo wind (UKMO model) ──────────────────
+function fetchWx(sp){
+  return new Promise(function(resolve){
+    var model=sp.id==='weston'?'&models=ukmo_seamless':'&models=ukmo_seamless';
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+sp.lat+'&longitude='+sp.lon+
+      '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,precipitation_probability,weather_code'+
+      '&wind_speed_unit=kmh&timezone=Europe%2FLondon&forecast_days=7'+model;
+    fetch(url)
+      .then(function(r){return r.json();})
+      .then(function(j){wxData[sp.id]=j;resolve();})
+      .catch(function(){wxData[sp.id]=null;resolve();});
+  });
+}
+
+// ── FETCH: Stormglass waves (via proxy) ──────────────────
+function fetchSG(sp){
+  return new Promise(function(resolve){
+    var now=new Date();
+    var start=new Date(now); start.setHours(0,0,0,0);
+    var end=new Date(start); end.setDate(end.getDate()+7);
+    var params='waveHeight,wavePeriod,waveDirection,swellHeight,swellPeriod,swellDirection,windWaveHeight,waterTemperature';
+    var sgUrl='https://api.stormglass.io/v2/weather/point?lat='+sp.lat+'&lng='+sp.lon+
+      '&params='+params+'&start='+start.toISOString()+'&end='+end.toISOString();
+    var proxyUrl=PROXY+'?url='+encodeURIComponent(sgUrl);
+    fetch(proxyUrl,{headers:{'Authorization':SG_KEY}})
+      .then(function(r){return r.json();})
+      .then(function(j){sgData[sp.id]=j;resolve();})
+      .catch(function(){sgData[sp.id]=null;resolve();});
+  });
+}
+
+// ── FETCH: ADMIRALTY tides (via proxy) ───────────────────
+function fetchTides(spotId, stationId){
+  return new Promise(function(resolve){
+    var adUrl='https://admiraltyapi.azure-api.net/uktidalapi/api/V1/Stations/'+stationId+'/TidalEvents?duration=7';
+    var proxyUrl=PROXY+'?url='+encodeURIComponent(adUrl);
+    fetch(proxyUrl,{headers:{'Ocp-Apim-Subscription-Key':AD_KEY}})
+      .then(function(r){return r.json();})
+      .then(function(events){
+        // Group by date, convert GMT to local
+        var byDate={};
+        var bstOffset=isBST()?60:0;
+        (events||[]).forEach(function(ev){
+          var gmtDate=new Date(ev.DateTime+'Z');
+          var localDate=new Date(gmtDate.getTime()+bstOffset*60000);
+          var dateStr=gmtDate.toISOString().split('T')[0];
+          var h=localDate.getUTCHours().toString().padStart(2,'0');
+          var m=localDate.getUTCMinutes().toString().padStart(2,'0');
+          var localTime=h+':'+m;
+          var timeMins=localDate.getUTCHours()*60+localDate.getUTCMinutes();
+          if(!byDate[dateStr])byDate[dateStr]=[];
+          byDate[dateStr].push({
+            type:ev.EventType==='HighWater'?'HW':'LW',
+            height:ev.Height,
+            localTime:localTime,
+            timeMins:timeMins,
+            hourIdx:localDate.getUTCHours(), // approximate hour within day
+            isApprox:ev.IsApproximateTime
+          });
+        });
+        tideData[spotId]=byDate;
+        resolve();
+      })
+      .catch(function(){tideData[spotId]=null;resolve();});
+  });
+}
+
+// ── EXTRACT: Weather for day ──────────────────────────────
+function extractWx(json,di){
+  if(!json||!json.hourly)return null;
+  var h=json.hourly,b=di*24,mid=b+11;
+  return{
+    wsArr:   h.wind_speed_10m||null,
+    wdArr:   h.wind_direction_10m||null,
+    gustArr: h.wind_gusts_10m||null,
+    airTemp: h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
+    precip:  avgArr(h.precipitation_probability,mid,3),
+    wxCode:  h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
+    middayIdx:mid,
+    hourlyLen:(h.wind_speed_10m||[]).length,
+    dayBase: b
+  };
+}
+
+// ── EXTRACT: Stormglass waves for day ────────────────────
+// Stormglass returns hourly data; pick midday values
+// waveHeight in metres, use SG's sg value (blended source)
+function extractSG(json,di){
+  if(!json||!json.hours)return{waveHeight:null,wavePeriod:null,waveDir:null,swellHeight:null,swellPeriod:null,swellDir:null,seaTemp:null};
+  var target=new Date(); target.setDate(target.getDate()+di); target.setHours(13,0,0,0);
+  var targetISO=target.toISOString().substring(0,13); // "YYYY-MM-DDTHH"
+  var hour=null;
+  json.hours.forEach(function(h){
+    if(h.time&&h.time.substring(0,13)===targetISO)hour=h;
+  });
+  if(!hour){
+    // fallback: find closest hour within that day
+    var dayStr=target.toISOString().split('T')[0];
+    var dayHours=json.hours.filter(function(h){return h.time&&h.time.startsWith(dayStr);});
+    if(dayHours.length)hour=dayHours[Math.floor(dayHours.length/2)];
+  }
+  if(!hour)return{waveHeight:null,wavePeriod:null,waveDir:null,swellHeight:null,swellPeriod:null,swellDir:null,seaTemp:null};
+  function val(key){ var v=hour[key]; if(!v)return null; return v.sg!=null?v.sg:v.noaa!=null?v.noaa:v.icon!=null?v.icon:null; }
+  return{
+    waveHeight:  val('waveHeight'),
+    wavePeriod:  val('wavePeriod'),
+    waveDir:     val('waveDirection'),
+    swellHeight: val('swellHeight'),
+    swellPeriod: val('swellPeriod'),
+    swellDir:    val('swellDirection'),
+    seaTemp:     val('waterTemperature')
+  };
+}
+
+// ── EXTRACT: ADMIRALTY tides for day ─────────────────────
+function getTideEvents(spotId,di){
+  var d=new Date(); d.setDate(d.getDate()+di);
+  var dateStr=d.toISOString().split('T')[0];
+  var data=tideData[spotId];
+  if(!data||!data[dateStr])return[];
+  return data[dateStr];
+}
+
+// ── SCORING ───────────────────────────────────────────────
+
+// ─── Weston Kite ──────────────────────────────────────────
+function scoreWeston(wx,waves,tideEvs,duskMins){
   var noGo=false,noGoReasons=[],breakdown=[],total=0,weight=0;
 
-  // 1. TIDE: HW between 09:00 and dusk — Weight 25, hard gate
+  // 1. TIDE: HW between 09:00 and dusk — hard gate, Weight 25
   var tideScore=0,tideNote='No tide data',bestHW=null;
-  var hwEvents=(data.tideEvents||[]).filter(function(e){return e.type==='HW';});
-  if(hwEvents.length){
-    hwEvents.forEach(function(ev){
-      if(bestHW||!ev.time)return;
-      var tp=ev.time.split('T')[1].split(':');
-      var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-      if(mins>=540&&mins<=duskMins){
-        bestHW={val:ev.val,timeMins:mins,hourIdx:ev.hourIdx,timeStr:tp[0]+':'+tp[1]};
-        tideScore=25;
-        tideNote='HW ~'+tp[0]+':'+tp[1]+' (modelled)';
-      }
-    });
-    if(!bestHW){
-      noGo=true;
-      noGoReasons.push('HW not between 09:00 and dusk. Modelled HW at: '+hwEvents.map(function(e){return e.time?e.time.split('T')[1].substring(0,5):'?';}).join(', '));
-      tideNote='HW outside window — NO-GO';
+  var hwEvs=tideEvs.filter(function(e){return e.type==='HW';});
+  hwEvs.forEach(function(ev){
+    if(bestHW)return;
+    if(ev.timeMins>=540&&ev.timeMins<=duskMins){
+      bestHW=ev; tideScore=25;
+      tideNote='HW '+ev.localTime+(ev.isApprox?' (approx)':'');
     }
-  } else { tideScore=8; tideNote='No modelled tide data'; }
+  });
+  if(hwEvs.length&&!bestHW){
+    noGo=true;
+    noGoReasons.push('HW not between 09:00 and dusk. HW at: '+hwEvs.map(function(e){return e.localTime;}).join(', '));
+    tideNote='HW outside window — NO-GO';
+  } else if(!hwEvs.length){ tideScore=8; tideNote='No tide data'; }
   breakdown.push({label:'Tide (HW 09:00–dusk)',score:tideScore,max:25,note:tideNote});
   total+=tideScore; weight+=25;
 
-  // Wind: avg at HW hour (±1hr mean) for robustness, no gusts in scoring
-  var windWindowLabel, wsKmh, gustKmh, wdDeg;
-  if(bestHW&&bestHW.hourIdx!=null){
-    var hi=bestHW.hourIdx;
-    var idxs=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<data.hourlyLen;});
-    wsKmh  = avgIdx(data.wsArr, idxs);
-    wdDeg  = avgIdx(data.wdArr, idxs);
-    gustKmh= data.gustArr&&data.gustArr[hi]!=null?data.gustArr[hi]:null; // display only
-    windWindowLabel='avg around HW ~'+bestHW.timeStr;
-  } else {
-    var mid=data.middayIdx;
-    wsKmh  = avgIdx(data.wsArr,  [mid-1,mid,mid+1]);
-    wdDeg  = avgIdx(data.wdArr,  [mid-1,mid,mid+1]);
-    gustKmh= data.gustArr&&data.gustArr[mid]!=null?data.gustArr[mid]:null;
-    windWindowLabel='midday average (no qualifying HW)';
+  // Wind at HW ±1hr
+  var windW={ws:null,wd:null,gust:null},windLabel='midday';
+  if(bestHW&&wx){
+    var hi=wx.dayBase+bestHW.hourIdx;
+    var idxs=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});
+    windW=windAtIdx(wx,idxs);
+    windLabel='avg ±1hr of HW '+bestHW.localTime;
+  } else if(wx){
+    windW=windAtIdx(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);
   }
-  var wsMph=toMph(wsKmh);
-  data._wsKmh=wsKmh; data._gustKmh=gustKmh; data._wdDeg=wdDeg; data._windWindowLabel=windWindowLabel;
+  wx._ws=windW.ws; wx._wd=windW.wd; wx._gust=windW.gust; wx._windLabel=windLabel;
 
   // 2. WIND DIRECTION — Weight 25
-  var dir=d2dir(wdDeg);
+  var dir=d2dir(windW.wd);
   var dirScore=0,dirNote=dir;
   var validDirs=['S','SSW','SW','WSW','W','WNW','NW'];
   if(validDirs.indexOf(dir)===-1){
     noGo=true; noGoReasons.push('Wind direction '+dir+' outside S–NW arc — NO-GO');
-    dirNote=dir+' — outside permitted arc';
+    dirNote=dir+' — outside arc';
   } else if(dir==='SW'){dirScore=25;dirNote=dir+' — ideal';}
   else if(dir==='SSW'||dir==='WSW'){dirScore=20;dirNote=dir+' — good';}
   else if(dir==='WNW'||dir==='NW'){dirScore=15;dirNote=dir+' — ok';}
@@ -342,6 +457,7 @@ function scoreWeston(data,duskMins){
   total+=dirScore; weight+=25;
 
   // 3. WIND SPEED — Weight 25
+  var wsMph=toMph(windW.ws);
   var windScore=0,windNote=wsMph!=null?Math.round(wsMph)+' mph':'—';
   if(wsMph!=null){
     if(wsMph>=18&&wsMph<=24){windScore=25;windNote=Math.round(wsMph)+' mph — ideal';}
@@ -356,7 +472,7 @@ function scoreWeston(data,duskMins){
   total+=windScore; weight+=25;
 
   // 4. TEMP & WEATHER — Weight 25
-  var t=scoreTempWeather(data.airTemp,data.wxCode);
+  var t=scoreTempWeather(wx?wx.airTemp:null,wx?wx.wxCode:null);
   var tAdj={score:Math.round(t.score*25/15),max:25,note:t.note};
   breakdown.push({label:'Temp & weather',score:tAdj.score,max:tAdj.max,note:tAdj.note});
   total+=tAdj.score; weight+=tAdj.max;
@@ -364,278 +480,234 @@ function scoreWeston(data,duskMins){
   return{score:noGo?0:Math.min(10,(total/weight)*10),noGo:noGo,noGoReasons:noGoReasons,breakdown:breakdown};
 }
 
-// ── Saunton Kite Scoring ──────────────────────────────────
-// Faces west. Onshore/cross-on (W,SW,NW) = ideal. E = NO-GO.
-// Low tide best. Above 5ft (face) = NO-GO.
-function scoreSauntonKite(data,duskMins){
+// ─── Saunton Kite ─────────────────────────────────────────
+function scoreSauntonKite(wx,waves,tideEvs,duskMins){
   var noGo=false,noGoReasons=[],breakdown=[],total=0,weight=0;
 
-  // 1. WAVE HEIGHT — Weight 20, hard gate above 5ft face
-  var wh=data.waveHeight; // metres Hs
-  var faceFt=hsToFaceFt(wh);
-  var waveScore=0,waveNote=wh!=null?'~'+Math.round(faceFt||0)+'ft face ('+wh.toFixed(1)+'m Hs)':'—';
-  if(wh!=null){
-    if(faceFt>5){
-      noGo=true; noGoReasons.push('Waves too big — ~'+Math.round(faceFt)+'ft face (>5ft NO-GO)');
-      waveNote='~'+Math.round(faceFt)+'ft — too big, NO-GO'; waveScore=0;
-    } else if(faceFt<=3){waveScore=20;waveNote='~'+Math.round(faceFt)+'ft — good (2–3ft)';}
-    else if(faceFt<=5){waveScore=10;waveNote='~'+Math.round(faceFt)+'ft — ok (4–5ft)';}
-  } else { waveScore=10; waveNote='No wave data'; }
+  // 1. WAVE HEIGHT — Weight 20, >5ft NO-GO
+  var wh=waves?waves.swellHeight||waves.waveHeight:null;
+  var waveFt=mToFt(wh);
+  var waveScore=0,waveNote=waveFt!=null?Math.round(waveFt)+'ft':'—';
+  if(waveFt!=null){
+    if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft, >5ft NO-GO)');waveScore=0;waveNote=Math.round(waveFt)+'ft — NO-GO';}
+    else if(waveFt<=3){waveScore=20;waveNote=Math.round(waveFt)+'ft — good';}
+    else if(waveFt<=5){waveScore=10;waveNote=Math.round(waveFt)+'ft — just ok';}
+  } else{waveScore=10;waveNote='No wave data';}
   breakdown.push({label:'Wave height',score:waveScore,max:20,note:waveNote});
   total+=waveScore; weight+=20;
 
-  // Wind: avg around nearest LW hour
-  var lwEvents=(data.tideEvents||[]).filter(function(e){return e.type==='LW';});
-  var bestLW=null,bestLWDiff=9999;
-  lwEvents.forEach(function(ev){
-    if(!ev.time||ev.hourIdx==null)return;
-    var tp=ev.time.split('T')[1].split(':');
-    var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-    var diff=Math.abs(mins-12*60);
-    if(diff<bestLWDiff){bestLWDiff=diff;bestLW={timeMins:mins,hourIdx:ev.hourIdx,timeStr:tp[0]+':'+tp[1]};}
-  });
-  var lwWindIdxs, lwWindLabel;
-  if(bestLW){
-    var lwhi=bestLW.hourIdx;
-    lwWindIdxs=[lwhi-1,lwhi,lwhi+1].filter(function(i){return i>=0&&i<data.hourlyLen;});
-    lwWindLabel='avg around LW ~'+bestLW.timeStr;
-  } else {
-    lwWindIdxs=[data.middayIdx-1,data.middayIdx,data.middayIdx+1];
-    lwWindLabel='midday average (no LW data)';
+  // Wind at LW ±1hr
+  var lwRes=findNearestLW(tideEvs,720);
+  var windW={ws:null,wd:null,gust:null},windLabel='midday';
+  if(lwRes&&wx){
+    var hi=wx.dayBase+lwRes.ev.hourIdx;
+    var idxs=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});
+    windW=windAtIdx(wx,idxs);
+    windLabel='avg ±1hr of LW '+lwRes.ev.localTime;
+  } else if(wx){
+    windW=windAtIdx(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);
   }
-  var skWsKmh=avgIdx(data.wsArr,lwWindIdxs);
-  var skWdDeg=avgIdx(data.wdArr,lwWindIdxs);
-  var skGustKmh=bestLW&&data.gustArr&&data.gustArr[bestLW.hourIdx]!=null?data.gustArr[bestLW.hourIdx]:null;
-  data._wsKmh=skWsKmh; data._gustKmh=skGustKmh; data._wdDeg=skWdDeg; data._windWindowLabel=lwWindLabel;
-  var wsMph=toMph(skWsKmh);
-  var dir=d2dir(skWdDeg);
+  wx._ws=windW.ws; wx._wd=windW.wd; wx._gust=windW.gust; wx._windLabel=windLabel;
+
+  // 2. WIND DIRECTION — Weight 25
+  var dir=d2dir(windW.wd);
   var dirScore=0,dirNote=dir;
   var noGoDirs=['E','ENE','NE'];
   if(noGoDirs.indexOf(dir)>=0){
-    noGo=true; noGoReasons.push('Wind direction '+dir+' is offshore — NO-GO');
-    dirNote=dir+' — offshore, NO-GO'; dirScore=0;
+    noGo=true;noGoReasons.push('Wind direction '+dir+' is offshore — NO-GO');
+    dirNote=dir+' — offshore, NO-GO';
   } else if(dir==='W'){dirScore=25;dirNote=dir+' — ideal (onshore)';}
   else if(dir==='WSW'||dir==='WNW'){dirScore=23;dirNote=dir+' — ideal (cross-on)';}
   else if(dir==='SW'||dir==='NW'){dirScore=18;dirNote=dir+' — good';}
-  else if(dir==='SSW'||dir==='NNW'||dir==='N'||dir==='S'){dirScore=12;dirNote=dir+' — ok (cross-shore)';}
-  else if(dir==='SSE'||dir==='SE'){dirScore=8;dirNote=dir+' — marginal';}
+  else if(['SSW','NNW','N','S'].indexOf(dir)>=0){dirScore=12;dirNote=dir+' — ok (cross)';}
+  else if(['SSE','SE'].indexOf(dir)>=0){dirScore=8;dirNote=dir+' — marginal';}
   else if(dir==='ESE'){dirScore=3;dirNote=dir+' — nearly offshore';}
-  else{dirScore=5;dirNote=dir+' — marginal';}
+  else{dirScore=5;dirNote=dir;}
   breakdown.push({label:'Wind direction',score:dirScore,max:25,note:dirNote});
   total+=dirScore; weight+=25;
 
-  // 3. WIND SPEED — Weight 25 (using LW-timed avg)
+  // 3. WIND SPEED — Weight 20
+  var wsMph=toMph(windW.ws);
   var windScore=0,windNote=wsMph!=null?Math.round(wsMph)+' mph':'—';
   if(wsMph!=null){
-    if(wsMph>=18&&wsMph<=24){windScore=25;windNote=Math.round(wsMph)+' mph — ideal';}
-    else if(wsMph>=14&&wsMph<18){windScore=18;windNote=Math.round(wsMph)+' mph — good (light)';}
-    else if(wsMph>24&&wsMph<=30){windScore=18;windNote=Math.round(wsMph)+' mph — good (strong)';}
-    else if(wsMph>=10&&wsMph<14){windScore=8;windNote=Math.round(wsMph)+' mph — too light';}
-    else if(wsMph>30&&wsMph<=35){windScore=8;windNote=Math.round(wsMph)+' mph — getting strong';}
+    if(wsMph>=18&&wsMph<=24){windScore=20;windNote=Math.round(wsMph)+' mph — ideal';}
+    else if(wsMph>=14&&wsMph<18){windScore=14;windNote=Math.round(wsMph)+' mph — good (light)';}
+    else if(wsMph>24&&wsMph<=30){windScore=14;windNote=Math.round(wsMph)+' mph — good (strong)';}
+    else if(wsMph>=10&&wsMph<14){windScore=6;windNote=Math.round(wsMph)+' mph — too light';}
+    else if(wsMph>30&&wsMph<=35){windScore=6;windNote=Math.round(wsMph)+' mph — getting strong';}
     else if(wsMph>35){windScore=2;windNote=Math.round(wsMph)+' mph — too strong';}
     else{windScore=2;windNote=Math.round(wsMph)+' mph — too light';}
   }
-  breakdown.push({label:'Wind speed',score:windScore,max:25,note:windNote});
-  total+=windScore; weight+=25;
+  breakdown.push({label:'Wind speed',score:windScore,max:20,note:windNote});
+  total+=windScore; weight+=20;
 
-  // 4. TIDE — Weight 15 (not a gate, low tide = best)
-  var tideScore=0,tideNote='No tide data';
-  if(bestLW){
-    if(bestLWDiff<=120){tideScore=15;tideNote='Near LW ~'+bestLW.timeStr+' — ideal';}
-    else if(bestLWDiff<=240){tideScore=10;tideNote='Approaching LW ~'+bestLW.timeStr+' — ok';}
-    else{tideScore=5;tideNote='Far from LW — less ideal';}
-  } else { tideScore=7; tideNote='No modelled tide data'; }
+  // 4. TIDE — Weight 15 (low = best)
+  var tideScore=7,tideNote='No tide data';
+  if(lwRes){
+    if(lwRes.diff<=120){tideScore=15;tideNote='Near LW '+lwRes.ev.localTime+' — ideal';}
+    else if(lwRes.diff<=240){tideScore=10;tideNote='Approaching LW '+lwRes.ev.localTime;}
+    else{tideScore=5;tideNote='Far from LW';}
+  }
   breakdown.push({label:'Tide (low = best)',score:tideScore,max:15,note:tideNote});
   total+=tideScore; weight+=15;
 
-  // 5. TEMP & WEATHER — Weight 15
-  var t=scoreTempWeather(data.airTemp,data.wxCode);
-  breakdown.push({label:'Temp & weather',score:t.score,max:t.max,note:t.note});
-  total+=t.score; weight+=t.max;
+  // 5. SWELL PERIOD — Weight 10 (bonus for quality)
+  var sp=waves?waves.swellPeriod||waves.wavePeriod:null;
+  var periodScore=0,periodNote=sp!=null?sp.toFixed(0)+'s':'—';
+  if(sp!=null){
+    if(sp>=12){periodScore=10;periodNote=sp.toFixed(0)+'s — excellent';}
+    else if(sp>=9){periodScore=7;periodNote=sp.toFixed(0)+'s — good';}
+    else if(sp>=7){periodScore=4;periodNote=sp.toFixed(0)+'s — ok';}
+    else{periodScore=1;periodNote=sp.toFixed(0)+'s — short period';}
+  } else{periodScore=5;periodNote='No data';}
+  breakdown.push({label:'Swell period',score:periodScore,max:10,note:periodNote});
+  total+=periodScore; weight+=10;
+
+  // 6. TEMP & WEATHER — Weight 10
+  var t=scoreTempWeather(wx?wx.airTemp:null,wx?wx.wxCode:null);
+  var tAdj={score:Math.round(t.score*10/15),max:10,note:t.note};
+  breakdown.push({label:'Temp & weather',score:tAdj.score,max:tAdj.max,note:tAdj.note});
+  total+=tAdj.score; weight+=tAdj.max;
 
   return{score:noGo?0:Math.min(10,(total/weight)*10),noGo:noGo,noGoReasons:noGoReasons,breakdown:breakdown};
 }
 
-// ── Saunton SUP Scoring ───────────────────────────────────
-// Light winds ok. Strong onshore (W/SW >15mph) not ok.
-// Low tide preferred. Waves: 2-3ft ok, 4-5ft just ok.
-function scoreSauntonSUP(data,duskMins){
+// ─── Saunton SUP ──────────────────────────────────────────
+function scoreSauntonSUP(wx,waves,tideEvs,duskMins){
   var noGo=false,noGoReasons=[],breakdown=[],total=0,weight=0;
 
-  // 1. WAVE HEIGHT — Weight 25
-  var wh=data.waveHeight;
-  var faceFt=hsToFaceFt(wh);
-  var waveScore=0,waveNote=wh!=null?'~'+Math.round(faceFt||0)+'ft face':'—';
-  if(wh!=null){
-    if(faceFt>5){noGo=true;noGoReasons.push('Waves too big — ~'+Math.round(faceFt)+'ft (>5ft NO-GO)');waveScore=0;waveNote='~'+Math.round(faceFt)+'ft — NO-GO';}
-    else if(faceFt<1){waveScore=25;waveNote='~'+Math.round(faceFt)+'ft — flat, ideal';}
-    else if(faceFt<=2){waveScore=20;waveNote='~'+Math.round(faceFt)+'ft — small, good';}
-    else if(faceFt<=3){waveScore=14;waveNote='~'+Math.round(faceFt)+'ft — ok';}
-    else if(faceFt<=5){waveScore=7;waveNote='~'+Math.round(faceFt)+'ft — just ok';}
-  } else { waveScore=12; waveNote='No wave data'; }
+  // 1. WAVE HEIGHT — Weight 25, >5ft NO-GO
+  var wh=waves?waves.waveHeight:null;
+  var waveFt=mToFt(wh);
+  var waveScore=0,waveNote=waveFt!=null?Math.round(waveFt)+'ft':'—';
+  if(waveFt!=null){
+    if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');waveScore=0;waveNote=Math.round(waveFt)+'ft — NO-GO';}
+    else if(waveFt<1){waveScore=25;waveNote=Math.round(waveFt)+'ft — flat';}
+    else if(waveFt<=2){waveScore=20;waveNote=Math.round(waveFt)+'ft — small, good';}
+    else if(waveFt<=3){waveScore=14;waveNote=Math.round(waveFt)+'ft — ok';}
+    else if(waveFt<=5){waveScore=7;waveNote=Math.round(waveFt)+'ft — just ok';}
+  } else{waveScore=12;waveNote='No wave data';}
   breakdown.push({label:'Wave height',score:waveScore,max:25,note:waveNote});
   total+=waveScore; weight+=25;
 
-  // Wind at LW: find nearest LW and avg around it
-  var supLwEvents=(data.tideEvents||[]).filter(function(e){return e.type==='LW';});
-  var supBestLW=null,supBestLWDiff=9999;
-  supLwEvents.forEach(function(ev){
-    if(!ev.time||ev.hourIdx==null)return;
-    var tp=ev.time.split('T')[1].split(':');
-    var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-    var diff=Math.abs(mins-12*60);
-    if(diff<supBestLWDiff){supBestLWDiff=diff;supBestLW={timeMins:mins,hourIdx:ev.hourIdx,timeStr:tp[0]+':'+tp[1]};}
-  });
-  var supWindIdxs,supWindLabel;
-  if(supBestLW){
-    var slwhi=supBestLW.hourIdx;
-    supWindIdxs=[slwhi-1,slwhi,slwhi+1].filter(function(i){return i>=0&&i<data.hourlyLen;});
-    supWindLabel='avg around LW ~'+supBestLW.timeStr;
-  } else {
-    supWindIdxs=[data.middayIdx-1,data.middayIdx,data.middayIdx+1];
-    supWindLabel='midday average';
+  // Wind at LW ±1hr
+  var lwRes=findNearestLW(tideEvs,720);
+  var windW={ws:null,wd:null,gust:null},windLabel='midday';
+  if(lwRes&&wx){
+    var hi=wx.dayBase+lwRes.ev.hourIdx;
+    var idxs=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});
+    windW=windAtIdx(wx,idxs);
+    windLabel='avg ±1hr of LW '+lwRes.ev.localTime;
+  } else if(wx){
+    windW=windAtIdx(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);
   }
-  var supWsKmh=avgIdx(data.wsArr,supWindIdxs);
-  var supWdDeg=avgIdx(data.wdArr,supWindIdxs);
-  var supGustKmh=supBestLW&&data.gustArr&&data.gustArr[supBestLW.hourIdx]!=null?data.gustArr[supBestLW.hourIdx]:null;
-  data._wsKmh=supWsKmh; data._gustKmh=supGustKmh; data._wdDeg=supWdDeg; data._windWindowLabel=supWindLabel;
+  wx._ws=windW.ws; wx._wd=windW.wd; wx._gust=windW.gust; wx._windLabel=windLabel;
 
-  // 2. WIND SPEED — Weight 25 (at LW)
-  var wsMph=toMph(supWsKmh);
+  // 2. WIND SPEED — Weight 25
+  var wsMph=toMph(windW.ws);
   var windScore=0,windNote=wsMph!=null?Math.round(wsMph)+' mph':'—';
   if(wsMph!=null){
-    if(wsMph<8){windScore=25;windNote=Math.round(wsMph)+' mph — ideal (calm)';}
-    else if(wsMph<=14){windScore=20;windNote=Math.round(wsMph)+' mph — light, good';}
-    else if(wsMph<=20){windNote=Math.round(wsMph)+' mph — moderate';windScore=12;}
-    else if(wsMph<=28){windNote=Math.round(wsMph)+' mph — strong';windScore=5;}
-    else{windNote=Math.round(wsMph)+' mph — too strong';windScore=1;}
+    if(wsMph<8){windScore=25;windNote=Math.round(wsMph)+' mph — calm';}
+    else if(wsMph<=14){windScore=20;windNote=Math.round(wsMph)+' mph — light';}
+    else if(wsMph<=20){windScore=12;windNote=Math.round(wsMph)+' mph — moderate';}
+    else if(wsMph<=28){windScore=5;windNote=Math.round(wsMph)+' mph — strong';}
+    else{windScore=1;windNote=Math.round(wsMph)+' mph — too strong';}
   }
   breakdown.push({label:'Wind speed',score:windScore,max:25,note:windNote});
   total+=windScore; weight+=25;
 
-  // 3. WIND DIRECTION — Weight 20 (using LW-timed direction)
-  var dir=d2dir(supWdDeg);
+  // 3. WIND DIRECTION — Weight 20
+  var dir=d2dir(windW.wd);
   var dirScore=0,dirNote=dir;
   var onshoreDirs=['W','WSW','SW','WNW'];
   var isOnshore=onshoreDirs.indexOf(dir)>=0;
   var isStrong=wsMph!=null&&wsMph>15;
   if(isOnshore&&isStrong){
-    noGo=true; noGoReasons.push('Strong onshore wind ('+Math.round(wsMph||0)+'mph '+dir+') — NO-GO for SUP');
-    dirScore=0; dirNote=dir+' '+Math.round(wsMph||0)+'mph — strong onshore, NO-GO';
-  } else if(!isOnshore||!isStrong){
-    if(['NE','ENE','E','ESE','SE'].indexOf(dir)>=0){dirScore=20;dirNote=dir+' — offshore/sheltered';}
-    else if(['N','NNE','S','SSE','SSW'].indexOf(dir)>=0){dirScore=16;dirNote=dir+' — cross-shore';}
-    else if(isOnshore&&!isStrong){dirScore=10;dirNote=dir+' — light onshore, manageable';}
-    else{dirScore=13;dirNote=dir;}
-  }
+    noGo=true;noGoReasons.push('Strong onshore ('+Math.round(wsMph||0)+'mph '+dir+') — NO-GO');
+    dirScore=0;dirNote=dir+' — strong onshore, NO-GO';
+  } else if(['NE','ENE','E','ESE','SE'].indexOf(dir)>=0){dirScore=20;dirNote=dir+' — offshore';}
+  else if(['N','NNE','S','SSE','SSW'].indexOf(dir)>=0){dirScore=16;dirNote=dir+' — cross-shore';}
+  else if(isOnshore&&!isStrong){dirScore=10;dirNote=dir+' — light onshore, ok';}
+  else{dirScore=13;dirNote=dir;}
   breakdown.push({label:'Wind direction',score:dirScore,max:20,note:dirNote});
   total+=dirScore; weight+=20;
 
-  // 4. TIDE — Weight 15 (low tide best)
-  var tideScore=0,tideNote='No tide data';
-  if(supBestLW){
-    if(supBestLWDiff<=120){tideScore=15;tideNote='Near LW ~'+supBestLW.timeStr+' — ideal';}
-    else if(supBestLWDiff<=240){tideScore=10;tideNote='Approaching LW ~'+supBestLW.timeStr+' — ok';}
+  // 4. TIDE — Weight 15
+  var tideScore=7,tideNote='No tide data';
+  if(lwRes){
+    if(lwRes.diff<=120){tideScore=15;tideNote='Near LW '+lwRes.ev.localTime+' — ideal';}
+    else if(lwRes.diff<=240){tideScore=10;tideNote='Approaching LW '+lwRes.ev.localTime;}
     else{tideScore=5;tideNote='Far from LW';}
-  } else { tideScore=7; tideNote='No modelled tide data'; }
+  }
   breakdown.push({label:'Tide (low = best)',score:tideScore,max:15,note:tideNote});
   total+=tideScore; weight+=15;
 
   // 5. TEMP & WEATHER — Weight 15
-  var t=scoreTempWeather(data.airTemp,data.wxCode);
+  var t=scoreTempWeather(wx?wx.airTemp:null,wx?wx.wxCode:null);
   breakdown.push({label:'Temp & weather',score:t.score,max:t.max,note:t.note});
   total+=t.score; weight+=t.max;
 
   return{score:noGo?0:Math.min(10,(total/weight)*10),noGo:noGo,noGoReasons:noGoReasons,breakdown:breakdown};
 }
 
-// ── Rest Bay SUP Scoring ──────────────────────────────────
-// NO-GO within ±1hr of HT. NE >15mph onshore = NO-GO.
-// Waves: 2-3ft ok, 4-5ft just ok, >5ft NO-GO.
-// Tides: uses Weston modelled data as proxy.
-function scoreRestBay(data,westonData,duskMins){
+// ─── Rest Bay SUP ─────────────────────────────────────────
+function scoreRestBay(wx,waves,tideEvs,westonTideEvs,duskMins){
   var noGo=false,noGoReasons=[],breakdown=[],total=0,weight=0;
 
-  // 1. TIDE — NO-GO within ±1hr of HT — Weight 20
-  // Use Weston tidal events as proxy
-  var proxyTides=westonData?westonData.tideEvents:[];
-  var tideScore=0,tideNote='No tide data (proxy)';
-  var hwEvents=(proxyTides||[]).filter(function(e){return e.type==='HW';});
-  var nearHT=false;
-  if(hwEvents.length){
-    var middayMins=12*60;
-    hwEvents.forEach(function(ev){
-      if(!ev.time)return;
-      var tp=ev.time.split('T')[1].split(':');
-      var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-      var diff=Math.abs(mins-middayMins);
-      if(diff<=60)nearHT=true;
-    });
+  // 1. TIDE: NO-GO within ±1hr of HT — Weight 20
+  // Use Weston tides as proxy
+  var proxyHW=(westonTideEvs||[]).filter(function(e){return e.type==='HW';});
+  var tideScore=0,tideNote='No tide data';
+  var nearHT=false,minHtDiff=9999;
+  proxyHW.forEach(function(ev){
+    var diff=Math.abs(ev.timeMins-720);
+    if(diff<minHtDiff)minHtDiff=diff;
+    if(diff<=60)nearHT=true;
+  });
+  if(proxyHW.length){
     if(nearHT){
-      noGo=true; noGoReasons.push('Within ±1hr of high tide — NO-GO for SUP');
-      tideNote='Near HT — NO-GO'; tideScore=0;
-    } else {
-      // Score by distance from HT — further is generally better for SUP
-      var minDiffFromHT=9999;
-      hwEvents.forEach(function(ev){
-        if(!ev.time)return;
-        var tp=ev.time.split('T')[1].split(':');
-        var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-        var diff=Math.abs(mins-middayMins);
-        if(diff<minDiffFromHT)minDiffFromHT=diff;
-      });
-      if(minDiffFromHT>240){tideScore=20;tideNote='Well away from HT — good';}
-      else if(minDiffFromHT>120){tideScore=15;tideNote='~'+Math.round(minDiffFromHT/60)+'hrs from HT — ok';}
-      else{tideScore=10;tideNote='~'+Math.round(minDiffFromHT/60)+'hr from HT — caution';}
-    }
-  } else { tideScore=10; tideNote='No modelled tide data (Weston proxy)'; }
+      noGo=true;noGoReasons.push('Within ±1hr of high tide — NO-GO');
+      tideNote='Near HT — NO-GO';tideScore=0;
+    } else if(minHtDiff>240){tideScore=20;tideNote='Well away from HT';}
+    else if(minHtDiff>120){tideScore=15;tideNote='~'+Math.round(minHtDiff/60)+'hrs from HT';}
+    else{tideScore=10;tideNote='~'+Math.round(minHtDiff/60)+'hr from HT — caution';}
+  } else{tideScore=10;tideNote='No tide data (Weston proxy)';}
   breakdown.push({label:'Tide (no HT ±1hr)',score:tideScore,max:20,note:tideNote});
   total+=tideScore; weight+=20;
 
-  // Wind at LW: use Weston proxy tides to find LW hour, read Rest Bay wind at that time
-  var rbLwEvents=(westonData&&westonData.tideEvents?westonData.tideEvents:[]).filter(function(e){return e.type==='LW';});
-  var rbBestLW=null,rbBestLWDiff=9999;
-  rbLwEvents.forEach(function(ev){
-    if(!ev.time||ev.hourIdx==null)return;
-    var tp=ev.time.split('T')[1].split(':');
-    var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-    var diff=Math.abs(mins-12*60);
-    if(diff<rbBestLWDiff){rbBestLWDiff=diff;rbBestLW={timeMins:mins,hourIdx:ev.hourIdx,timeStr:tp[0]+':'+tp[1]};}
-  });
-  var rbWindIdxs,rbWindLabel;
-  if(rbBestLW){
-    var rbhi=rbBestLW.hourIdx;
-    rbWindIdxs=[rbhi-1,rbhi,rbhi+1].filter(function(i){return i>=0&&i<data.hourlyLen;});
-    rbWindLabel='avg around LW ~'+rbBestLW.timeStr+' (Weston proxy)';
-  } else {
-    rbWindIdxs=[data.middayIdx-1,data.middayIdx,data.middayIdx+1];
-    rbWindLabel='midday average';
+  // Wind at LW ±1hr (Weston LW as proxy)
+  var lwRes=findNearestLW(westonTideEvs,720);
+  var windW={ws:null,wd:null,gust:null},windLabel='midday';
+  if(lwRes&&wx){
+    var hi=wx.dayBase+lwRes.ev.hourIdx;
+    var idxs=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});
+    windW=windAtIdx(wx,idxs);
+    windLabel='avg ±1hr of LW '+lwRes.ev.localTime+' (Weston proxy)';
+  } else if(wx){
+    windW=windAtIdx(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);
   }
-  var rbWsKmh=avgIdx(data.wsArr,rbWindIdxs);
-  var rbWdDeg=avgIdx(data.wdArr,rbWindIdxs);
-  var rbGustKmh=rbBestLW&&data.gustArr&&data.gustArr[rbBestLW.hourIdx]!=null?data.gustArr[rbBestLW.hourIdx]:null;
-  data._wsKmh=rbWsKmh; data._gustKmh=rbGustKmh; data._wdDeg=rbWdDeg; data._windWindowLabel=rbWindLabel;
+  wx._ws=windW.ws; wx._wd=windW.wd; wx._gust=windW.gust; wx._windLabel=windLabel;
 
   // 2. WAVE HEIGHT — Weight 25
-  var wh=data.waveHeight;
-  var faceFt=hsToFaceFt(wh);
-  var waveScore=0,waveNote=wh!=null?'~'+Math.round(faceFt||0)+'ft face':'—';
-  if(wh!=null){
-    if(faceFt>5){noGo=true;noGoReasons.push('Waves too big — ~'+Math.round(faceFt)+'ft (>5ft NO-GO)');waveScore=0;waveNote='~'+Math.round(faceFt)+'ft — NO-GO';}
-    else if(faceFt<1){waveScore=25;waveNote='~'+Math.round(faceFt)+'ft — flat, ideal';}
-    else if(faceFt<=2){waveScore=20;waveNote='~'+Math.round(faceFt)+'ft — small, good';}
-    else if(faceFt<=3){waveScore=14;waveNote='~'+Math.round(faceFt)+'ft — ok';}
-    else if(faceFt<=5){waveScore=7;waveNote='~'+Math.round(faceFt)+'ft — just ok';}
-  } else { waveScore=12; waveNote='No wave data'; }
+  var wh=waves?waves.waveHeight:null;
+  var waveFt=mToFt(wh);
+  var waveScore=0,waveNote=waveFt!=null?Math.round(waveFt)+'ft':'—';
+  if(waveFt!=null){
+    if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');waveScore=0;waveNote=Math.round(waveFt)+'ft — NO-GO';}
+    else if(waveFt<1){waveScore=25;waveNote=Math.round(waveFt)+'ft — flat';}
+    else if(waveFt<=2){waveScore=20;waveNote=Math.round(waveFt)+'ft — small, good';}
+    else if(waveFt<=3){waveScore=14;waveNote=Math.round(waveFt)+'ft — ok';}
+    else if(waveFt<=5){waveScore=7;waveNote=Math.round(waveFt)+'ft — just ok';}
+  } else{waveScore=12;waveNote='No wave data';}
   breakdown.push({label:'Wave height',score:waveScore,max:25,note:waveNote});
   total+=waveScore; weight+=25;
 
-  // 3. WIND SPEED — Weight 20 (at LW time)
-  var wsMph=toMph(rbWsKmh);
+  // 3. WIND SPEED — Weight 20
+  var wsMph=toMph(windW.ws);
   var windScore=0,windNote=wsMph!=null?Math.round(wsMph)+' mph':'—';
   if(wsMph!=null){
-    if(wsMph<8){windScore=20;windNote=Math.round(wsMph)+' mph — calm, ideal';}
-    else if(wsMph<=14){windScore=16;windNote=Math.round(wsMph)+' mph — light, good';}
+    if(wsMph<8){windScore=20;windNote=Math.round(wsMph)+' mph — calm';}
+    else if(wsMph<=14){windScore=16;windNote=Math.round(wsMph)+' mph — light';}
     else if(wsMph<=20){windScore=9;windNote=Math.round(wsMph)+' mph — moderate';}
     else if(wsMph<=28){windScore=4;windNote=Math.round(wsMph)+' mph — strong';}
     else{windScore=1;windNote=Math.round(wsMph)+' mph — too strong';}
@@ -643,132 +715,76 @@ function scoreRestBay(data,westonData,duskMins){
   breakdown.push({label:'Wind speed',score:windScore,max:20,note:windNote});
   total+=windScore; weight+=20;
 
-  // 4. WIND DIRECTION — Weight 20 (at LW time)
-  var dir=d2dir(rbWdDeg);
+  // 4. WIND DIRECTION — Weight 20
+  var dir=d2dir(windW.wd);
   var dirScore=0,dirNote=dir;
   var onshoreDirsRB=['SW','WSW','W','WNW','NW'];
   var isOnshoreRB=onshoreDirsRB.indexOf(dir)>=0;
   var isStrongRB=wsMph!=null&&wsMph>15;
   if(isOnshoreRB&&isStrongRB){
-    noGo=true; noGoReasons.push('Strong onshore wind ('+Math.round(wsMph||0)+'mph '+dir+') — NO-GO');
-    dirScore=0; dirNote=dir+' '+Math.round(wsMph||0)+'mph — strong onshore, NO-GO';
-  } else if(['NE','ENE','E','N','NNE'].indexOf(dir)>=0){
-    dirScore=20; dirNote=dir+' — offshore, sheltered';
-  } else if(['SE','SSE','S','SSW'].indexOf(dir)>=0){
-    dirScore=15; dirNote=dir+' — cross-shore';
-  } else if(isOnshoreRB&&!isStrongRB){
-    dirScore=8; dirNote=dir+' — light onshore, manageable';
-  } else { dirScore=12; dirNote=dir; }
+    noGo=true;noGoReasons.push('Strong onshore ('+Math.round(wsMph||0)+'mph '+dir+') — NO-GO');
+    dirScore=0;dirNote=dir+' — strong onshore, NO-GO';
+  } else if(['NE','ENE','E','N','NNE'].indexOf(dir)>=0){dirScore=20;dirNote=dir+' — offshore';}
+  else if(['SE','SSE','S','SSW'].indexOf(dir)>=0){dirScore=15;dirNote=dir+' — cross-shore';}
+  else if(isOnshoreRB&&!isStrongRB){dirScore=8;dirNote=dir+' — light onshore, ok';}
+  else{dirScore=12;dirNote=dir;}
   breakdown.push({label:'Wind direction',score:dirScore,max:20,note:dirNote});
   total+=dirScore; weight+=20;
 
   // 5. TEMP & WEATHER — Weight 15
-  var t=scoreTempWeather(data.airTemp,data.wxCode);
+  var t=scoreTempWeather(wx?wx.airTemp:null,wx?wx.wxCode:null);
   breakdown.push({label:'Temp & weather',score:t.score,max:t.max,note:t.note});
   total+=t.score; weight+=t.max;
 
   return{score:noGo?0:Math.min(10,(total/weight)*10),noGo:noGo,noGoReasons:noGoReasons,breakdown:breakdown};
 }
 
-// ── Data stores ───────────────────────────────────────────
-var wxData={}, marineData={}, comp={};
-
-// ── Fetch ─────────────────────────────────────────────────
-function fetchWx(sp){
-  return new Promise(function(resolve){
-    // Use UKMO model for Weston — higher resolution for UK coastal locations
-    var model=sp.id==='weston'?'&models=ukmo_seamless':'';
-    var url='https://api.open-meteo.com/v1/forecast?latitude='+sp.lat+'&longitude='+sp.lon+
-      '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,precipitation_probability,weather_code'+
-      '&wind_speed_unit=kmh&timezone=Europe%2FLondon&forecast_days=7'+model;
-    fetch(url).then(function(r){return r.json();}).then(function(j){wxData[sp.id]=j;resolve();}).catch(function(){wxData[sp.id]=null;resolve();});
-  });
-}
-function fetchMarine(sp){
-  return new Promise(function(resolve){
-    var url='https://marine-api.open-meteo.com/v1/marine?latitude='+sp.lat+'&longitude='+sp.lon+
-      '&hourly=wave_height,wave_period,wave_direction,swell_wave_height,sea_surface_temperature,sea_level_height_msl'+
-      '&timezone=Europe%2FLondon&forecast_days=7';
-    fetch(url).then(function(r){return r.json();}).then(function(j){marineData[sp.id]=j;resolve();}).catch(function(){marineData[sp.id]=null;resolve();});
-  });
-}
-
-// ── Extract ───────────────────────────────────────────────
-function extractWeather(json,di){
-  if(!json||!json.hourly)return null;
-  var h=json.hourly,b=di*24,mid=b+11;
-  return{
-    ws:avgArr(h.wind_speed_10m,mid,3),
-    wd:h.wind_direction_10m&&h.wind_direction_10m[mid+1]!=null?h.wind_direction_10m[mid+1]:null,
-    gusts:avgArr(h.wind_gusts_10m,mid,3),
-    airTemp:h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
-    precip:avgArr(h.precipitation_probability,mid,3),
-    wxCode:h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
-    wsArr:h.wind_speed_10m||null,
-    gustArr:h.wind_gusts_10m||null,
-    wdArr:h.wind_direction_10m||null,
-    middayIdx:mid,
-    hourlyLen:(h.wind_speed_10m||[]).length
-  };
-}
-function extractMarine(json,di){
-  if(!json||!json.hourly)return{waveHeight:null,wavePeriod:null,waveDir:null,swellHeight:null,seaTemp:null,tideEvents:[],tideRange:null};
-  var h=json.hourly,b=di*24,mid=b+11;
-  var tideEvents=[];
-  if(h.sea_level_height_msl&&h.time){
-    for(var i=b+1;i<b+23;i++){
-      var p=h.sea_level_height_msl[i-1],c=h.sea_level_height_msl[i],n=h.sea_level_height_msl[i+1];
-      if(c!=null&&p!=null&&n!=null){
-        if(c>p&&c>n)tideEvents.push({type:'HW',val:c,time:h.time[i]||'',hourIdx:i});
-        else if(c<p&&c<n)tideEvents.push({type:'LW',val:c,time:h.time[i]||'',hourIdx:i});
-      }
-    }
-  }
-  var daySlice=(h.sea_level_height_msl||[]).slice(b,b+24).filter(function(v){return v!=null;});
-  var tHigh=daySlice.length?Math.max.apply(null,daySlice):null;
-  var tLow=daySlice.length?Math.min.apply(null,daySlice):null;
-  return{
-    waveHeight:avgArr(h.wave_height,mid,3),
-    wavePeriod:avgArr(h.wave_period,mid,3),
-    waveDir:h.wave_direction&&h.wave_direction[mid]!=null?h.wave_direction[mid]:null,
-    swellHeight:avgArr(h.swell_wave_height,mid,3),
-    seaTemp:h.sea_surface_temperature&&h.sea_surface_temperature[mid]!=null?h.sea_surface_temperature[mid]:null,
-    tideEvents:tideEvents,
-    tideRange:(tHigh!=null&&tLow!=null)?tHigh-tLow:null
-  };
-}
-
 // ── Build computed ────────────────────────────────────────
 function buildComp(){
   comp={};
-  // We need Weston marine data as proxy for Rest Bay tides
+  var sauntonWxData = wxData['saunton_kite']||wxData['saunton_sup'];
+  var sauntonSgData = sgData['saunton_kite']||sgData['saunton_sup'];
+  var sauntonTides  = tideData['saunton']||[];
+  var westonTideMap = tideData['weston']||{};
+
   SPOTS.forEach(function(sp){
     comp[sp.id]=[];
     for(var i=0;i<7;i++){
-      var wx=extractWeather(wxData[sp.id],i);
-      // For Saunton SUP, share weather data with Saunton Kite
-      if(!wx&&(sp.id==='saunton_sup'))wx=extractWeather(wxData['saunton_kite'],i);
-      var mar=extractMarine(marineData[sp.id]||marineData['saunton_kite'],i);
-      if(!wx){comp[sp.id].push(null);continue;}
-      var merged=Object.assign({},wx,mar||{});
+      var wxJson  = sp.id.startsWith('saunton')?sauntonWxData:wxData[sp.id];
+      var sgJson  = sp.id.startsWith('saunton')?sauntonSgData:sgData[sp.id];
+      var wx      = extractWx(wxJson,i);
+      var waves   = extractSG(sgJson,i);
+
+      var d=new Date(); d.setDate(d.getDate()+i);
+      var dateStr=d.toISOString().split('T')[0];
+
+      var tideEvs=[];
+      if(sp.id==='weston')      tideEvs=(tideData['weston']&&tideData['weston'][dateStr])||[];
+      else if(sp.id.startsWith('saunton')) tideEvs=(tideData['saunton']&&tideData['saunton'][dateStr])||[];
+      else if(sp.id==='restbay')tideEvs=(tideData['restbay']&&tideData['restbay'][dateStr])||[];
+
+      var westonTideEvs=(westonTideMap[dateStr])||[];
       var dusk=estimateDusk(sp.lat,i);
-      merged.duskMins=dusk;
+
+      if(!wx){comp[sp.id].push(null);continue;}
+
+      // Ensure wx has _ws etc initialised
+      wx._ws=null;wx._wd=null;wx._gust=null;wx._windLabel='';
+
       var result;
-      if(sp.scoring==='weston'){
-        result=scoreWeston(merged,dusk);
-      } else if(sp.scoring==='saunton_kite'){
-        result=scoreSauntonKite(merged,dusk);
-      } else if(sp.scoring==='saunton_sup'){
-        result=scoreSauntonSUP(merged,dusk);
-      } else if(sp.scoring==='restbay'){
-        var westonMar=extractMarine(marineData['weston'],i);
-        result=scoreRestBay(merged,westonMar,dusk);
-      } else { result={score:0,noGo:false,noGoReasons:[],breakdown:[]}; }
-      merged.score=result.score;
-      merged.noGo=result.noGo;
-      merged.noGoReasons=result.noGoReasons;
-      merged.breakdown=result.breakdown;
-      comp[sp.id].push(merged);
+      if(sp.scoring==='weston')           result=scoreWeston(wx,waves,tideEvs,dusk);
+      else if(sp.scoring==='saunton_kite')result=scoreSauntonKite(wx,waves,tideEvs,dusk);
+      else if(sp.scoring==='saunton_sup') result=scoreSauntonSUP(wx,waves,tideEvs,dusk);
+      else                                result=scoreRestBay(wx,waves,tideEvs,westonTideEvs,dusk);
+
+      comp[sp.id].push({
+        score:result.score, noGo:result.noGo,
+        noGoReasons:result.noGoReasons, breakdown:result.breakdown,
+        _ws:wx._ws, _wd:wx._wd, _gust:wx._gust, _windLabel:wx._windLabel,
+        airTemp:wx.airTemp, precip:wx.precip, wxCode:wx.wxCode,
+        duskMins:dusk, tideEvs:tideEvs, westonTideEvs:westonTideEvs,
+        waves:waves
+      });
     }
   });
 }
@@ -799,19 +815,18 @@ function sbClass(score,max){
   if(p>=0.85)return'sb-epic'; if(p>=0.6)return'sb-good';
   if(p>=0.3)return'sb-ok'; return'sb-poor';
 }
-function dirClass(sp,dir){
-  if(sp.scoring==='weston'){
-    if(dir==='SW'||dir==='SSW'||dir==='WSW')return'dir-good';
+function dirClass(sid,dir){
+  if(sid==='weston'){
+    if(['SW','SSW','WSW'].indexOf(dir)>=0)return'dir-good';
     if(['WNW','NW','S','W'].indexOf(dir)>=0)return'dir-ok';
     return'dir-bad';
   }
-  if(sp.scoring==='saunton_kite'){
+  if(sid==='saunton_kite'){
     if(['W','WSW','WNW'].indexOf(dir)>=0)return'dir-good';
-    if(['SW','NW','N','S','SSW','NNW'].indexOf(dir)>=0)return'dir-ok';
     if(['E','ENE','NE'].indexOf(dir)>=0)return'dir-bad';
-    return'dir-neutral';
+    return'dir-ok';
   }
-  if(sp.scoring==='saunton_sup'||sp.scoring==='restbay'){
+  if(sid==='saunton_sup'||sid==='restbay'){
     if(['NE','ENE','E','N','NNE'].indexOf(dir)>=0)return'dir-good';
     if(['SW','W','WSW','WNW','NW'].indexOf(dir)>=0)return'dir-bad';
     return'dir-ok';
@@ -827,19 +842,15 @@ function render(){
   }
   html+='</tr></thead><tbody>';
 
-  // Group spots with section headers
   var sections=[
     {label:'Weston-super-Mare',ids:['weston']},
     {label:'Saunton Sands',ids:['saunton_kite','saunton_sup']},
     {label:'Rest Bay, Porthcawl',ids:['restbay']}
   ];
-
   sections.forEach(function(sec){
-    // Section header row
-    html+='<tr class="section-row"><td colspan="8" style="padding:10px 4px 2px;font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px">'+sec.label+'</td></tr>';
+    html+='<tr class="section-row"><td colspan="8">'+sec.label+'</td></tr>';
     sec.ids.forEach(function(sid){
-      var sp=SPOTS.filter(function(s){return s.id===sid;})[0];
-      if(!sp)return;
+      var sp=SPOTS.filter(function(s){return s.id===sid;})[0]; if(!sp)return;
       var pc=sp.activity==='kite'?'pill-kite':'pill-sup';
       var pl=sp.activity==='kite'?'Kitesurfing':'Paddleboarding';
       html+='<tr class="spot-row"><td><div class="spot-label"><div class="spot-label-name">'+sp.region+'</div><span class="activity-pill '+pc+'">'+pl+'</span></div></td>';
@@ -848,20 +859,16 @@ function render(){
         var tc=d===0?' is-today':'';
         if(!c){html+='<td><div class="score-cell band-poor'+tc+'"><div class="sc-score" style="font-size:14px">—</div></div></td>';continue;}
         var wxIcon=c.wxCode!=null?(WX_ICONS[c.wxCode]||''):'';
-        var displayWs=c._wsKmh!=null?c._wsKmh:c.ws;
-        var displayWd=c._wdDeg!=null?c._wdDeg:c.wd;
-        var dir=d2dir(displayWd);
-        var rws=toMph(displayWs)!=null?Math.round(toMph(displayWs)):0;
+        var dir=d2dir(c._wd);
+        var rws=toMph(c._ws)!=null?Math.round(toMph(c._ws)):0;
         if(c.noGo){
           var reason=c.noGoReasons&&c.noGoReasons[0]?c.noGoReasons[0].split('—')[0].trim():'Check conditions';
           if(reason.length>30)reason=reason.substring(0,28)+'…';
           html+='<td><div class="score-cell band-no'+tc+'" onclick="openPop(\''+sid+'\','+d+')">'+
             (wxIcon?'<div style="font-size:11px">'+wxIcon+'</div>':'')+
-            '<div class="sc-no">NO-GO</div>'+
-            '<div class="sc-no-reason">'+reason+'</div>'+
-            '</div></td>';
+            '<div class="sc-no">NO-GO</div><div class="sc-no-reason">'+reason+'</div></div></td>';
         } else {
-          var dc=dirClass(sp,dir);
+          var dc=dirClass(sid,dir);
           html+='<td><div class="score-cell '+band(c.score,false)+tc+'" onclick="openPop(\''+sid+'\','+d+')">'+
             (wxIcon?'<div style="font-size:12px;line-height:1">'+wxIcon+'</div>':'')+
             '<div class="sc-score">'+c.score.toFixed(1)+'</div>'+
@@ -874,7 +881,6 @@ function render(){
       html+='</tr>';
     });
   });
-
   html+='</tbody></table>';
   document.getElementById('main').innerHTML=html;
   var now=new Date();
@@ -902,22 +908,18 @@ function openPop(sid,di){
     c.breakdown.forEach(function(row){
       bkHtml+='<div class="sb-row"><span class="sb-label">'+row.label+'<span class="sb-note">'+row.note+'</span></span><span class="sb-val '+sbClass(row.score,row.max)+'">'+row.score+'/'+row.max+'</span></div>';
     });
-  } else { bkHtml='<div style="font-size:12px;color:#bbb">No breakdown available</div>'; }
+  } else{bkHtml='<div style="font-size:12px;color:#bbb">No breakdown available</div>';}
   document.getElementById('popBreakdown').innerHTML=bkHtml;
 
   // Wind
-  var wsKmh=c._wsKmh!=null?c._wsKmh:c.ws;
-  var gustKmh=c._gustKmh!=null?c._gustKmh:c.gusts;
-  var wdDeg=c._wdDeg!=null?c._wdDeg:c.wd;
-  var dir=d2dir(wdDeg);
-  var wsMph=toMph(wsKmh),gustMph=toMph(gustKmh);
+  var dir=d2dir(c._wd);
+  var wsMph=toMph(c._ws),gustMph=toMph(c._gust);
   var diffMph=wsMph!=null&&gustMph!=null?Math.round(gustMph-wsMph):null;
   var windFlag=wsMph!=null?(wsMph>=18&&wsMph<=24?'good':wsMph>=14&&wsMph<=30?'warn':'bad'):'';
-  var gustFlag=diffMph!=null?(diffMph<5?'good':diffMph<12?'warn':'bad'):'';
-  document.getElementById('popWindNote').textContent=c._windWindowLabel?'('+c._windWindowLabel+')':'';
+  document.getElementById('popWindNote').textContent=c._windLabel?'('+c._windLabel+')':'';
   document.getElementById('popWind').innerHTML=
-    pcell('Avg wind',wsMph!=null?Math.round(wsMph)+' mph':'—',dir+' · '+bft(wsKmh||0),windFlag)+
-    pcell('Gusts',gustMph!=null?Math.round(gustMph)+' mph':'—',diffMph!=null?'+'+diffMph+' mph vs avg':'',gustFlag);
+    pcell('Avg wind',wsMph!=null?Math.round(wsMph)+' mph':'—',dir+' · '+bft(c._ws||0),windFlag)+
+    pcell('Gusts',gustMph!=null?Math.round(gustMph)+' mph':'—',diffMph!=null?'+'+diffMph+' mph vs avg':'','');
 
   // Conditions
   var wxDesc=c.wxCode!=null?((WX_ICONS[c.wxCode]||'')+' '+(WX_CODES[c.wxCode]||'')):'—';
@@ -926,69 +928,55 @@ function openPop(sid,di){
   document.getElementById('popConditions').innerHTML=
     pcell('Weather',wxDesc,'','')+
     pcell('Air temp',airT,'Rain: '+(c.precip!=null?Math.round(c.precip)+'%':'—'),tempFlag)+
-    pcell('Sea temp',c.seaTemp!=null?Math.round(c.seaTemp)+'°C':'—','','')+
+    pcell('Sea temp',c.waves&&c.waves.seaTemp!=null?Math.round(c.waves.seaTemp)+'°C':'—','','')+
     pcell('Rain chance',c.precip!=null?Math.round(c.precip)+'%':'—','','');
 
-  // Waves
-  var faceFt=c.waveHeight!=null?Math.round(hsToFaceFt(c.waveHeight))+'ft face':'—';
-  var hsStr=c.waveHeight!=null?'('+c.waveHeight.toFixed(1)+'m Hs)':'';
+  // Waves (Stormglass)
+  var w=c.waves||{};
+  var whFt=mToFt(w.waveHeight),swFt=mToFt(w.swellHeight);
   document.getElementById('popWaves').innerHTML=
-    pcell('Wave height',faceFt,hsStr,'')+
-    pcell('Wave period',c.wavePeriod!=null?Math.round(c.wavePeriod)+'s':'—','longer=cleaner','')+
-    pcell('Swell',c.swellHeight!=null?c.swellHeight.toFixed(1)+'m':'—','','');
+    pcell('Wave height',whFt!=null?Math.round(whFt)+'ft':'—',w.waveHeight!=null?'('+w.waveHeight.toFixed(2)+'m)':'')+
+    pcell('Swell',swFt!=null?Math.round(swFt)+'ft':'—',w.swellPeriod!=null?w.swellPeriod.toFixed(0)+'s period':'')+
+    pcell('Swell dir',d2dir(w.swellDir),'','' );
 
-  // Tides
+  // Tides (ADMIRALTY)
   var dusk=c.duskMins||1080;
   var tHTML='';
-  if(sid==='weston'){
-    tHTML+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">HW window for scoring: 09:00–'+minsToTime(dusk)+' (est. dusk)</div>';
-  }
-  if(sid==='restbay'){
-    tHTML+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">Tide proxy: Weston-super-Mare. NO-GO within ±1hr of HT.</div>';
-  }
-  var tidesForDisplay=c.tideEvents;
-  if(sid==='restbay'){
-    var westonMar=extractMarine(marineData['weston'],di);
-    tidesForDisplay=westonMar?westonMar.tideEvents:[];
-  }
-  if(tidesForDisplay&&tidesForDisplay.length){
-    tHTML+='<div class="tide-modelled">';
-    tidesForDisplay.slice(0,6).forEach(function(ev){
+  if(sid==='weston') tHTML+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">HW window: 09:00–'+minsToTime(dusk)+' (est. dusk)</div>';
+  if(sid==='restbay') tHTML+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">Tide proxy: Weston · NO-GO ±1hr of HT</div>';
+
+  var displayEvs=sid==='restbay'?c.westonTideEvs:c.tideEvs;
+  if(displayEvs&&displayEvs.length){
+    tHTML+='<div class="tide-events">';
+    displayEvs.forEach(function(ev){
       var isHW=ev.type==='HW';
-      var timeStr=ev.time?ev.time.split('T')[1].substring(0,5):'—';
       var hwCls='';
-      if(isHW&&sid==='weston'&&ev.time){
-        var tp=ev.time.split('T')[1].split(':');
-        var mins=parseInt(tp[0])*60+parseInt(tp[1]);
-        hwCls=(mins>=540&&mins<=dusk)?' tide-good':' tide-bad';
-      }
-      tHTML+='<span class="tide-event '+(isHW?'tide-hw':'tide-lw')+hwCls+'">'+ev.type+' ~'+timeStr+' ('+ev.val.toFixed(1)+'m)</span>';
+      if(isHW&&sid==='weston') hwCls=(ev.timeMins>=540&&ev.timeMins<=dusk)?' tide-good':' tide-bad';
+      tHTML+='<span class="tide-event '+(isHW?'tide-hw':'tide-lw')+hwCls+'">'+(ev.isApprox?'~':'')+ev.type+' '+ev.localTime+' ('+ev.height.toFixed(1)+'m)</span>';
     });
     tHTML+='</div>';
-    if(c.tideRange!=null){
-      tHTML+='<div class="tide-range-row">Tidal range: ~'+c.tideRange.toFixed(1)+'m</div>';
+    // Tidal range
+    var hwH=displayEvs.filter(function(e){return e.type==='HW';});
+    var lwH=displayEvs.filter(function(e){return e.type==='LW';});
+    if(hwH.length&&lwH.length){
+      var range=(Math.max.apply(null,hwH.map(function(e){return e.height;}))-Math.min.apply(null,lwH.map(function(e){return e.height;}))).toFixed(1);
+      tHTML+='<div style="font-size:12px;color:#555;margin-top:6px">Tidal range: <strong>'+range+'m</strong>'+(sid==='weston'?' — plan launch ±2hrs of HW':'')+'</div>';
     }
+  } else {
+    tHTML+='<div class="tide-disclaimer">ADMIRALTY tide data loading…</div>';
   }
-  tHTML+='<div class="tide-disclaimer">Times above are modelled estimates (±1hr accuracy).</div>';
-  tHTML+='<a class="tide-link" href="'+EASYTIDE[sid]+'" target="_blank">View official ADMIRALTY tide times ↗</a>';
-  if(c._windWindowLabel){
-    tHTML+='<div class="wind-window-note">Wind scored at '+c._windWindowLabel+'</div>';
-  }
+  tHTML+='<a class="tide-link" href="'+EASYTIDE[sid]+'" target="_blank" style="margin-top:10px;display:flex">View official ADMIRALTY tide times ↗</a>';
   document.getElementById('popTides').innerHTML=tHTML;
 
   // Verdict
   var parts=[];
-  if(c.noGo){parts.push('This day does not meet the minimum requirements.');}
+  if(c.noGo){parts.push('Does not meet minimum requirements.');}
   else{
-    if(sc>=8)parts.push('Excellent — all the key boxes are ticked.');
-    else if(sc>=6)parts.push('Good conditions — worth the trip.');
-    else if(sc>=4)parts.push('Borderline — check the details before committing.');
-    else parts.push('Poor overall — probably not worth it today.');
-    if(c.breakdown){
-      c.breakdown.forEach(function(row){
-        if(row.score<row.max*0.4)parts.push(row.label+': '+row.note+'.');
-      });
-    }
+    if(sc>=8)parts.push('Excellent — all key factors look good.');
+    else if(sc>=6)parts.push('Good conditions — worth going.');
+    else if(sc>=4)parts.push('Borderline — check details before committing.');
+    else parts.push('Poor overall — probably not worth it.');
+    if(c.breakdown) c.breakdown.forEach(function(row){if(row.score<row.max*0.4)parts.push(row.label+': '+row.note+'.');});
   }
   document.getElementById('popVerdict').textContent=parts.join(' ');
   document.getElementById('popOverlay').classList.add('show');
@@ -997,36 +985,36 @@ function openPop(sid,di){
 function closePop(){document.getElementById('popOverlay').classList.remove('show');}
 function handleOverlayClick(e){if(e.target===document.getElementById('popOverlay'))closePop();}
 
+// ── Init ──────────────────────────────────────────────────
 function init(){
   var btn=document.getElementById('refreshBtn');
   btn.disabled=true; btn.textContent='↻ Loading…';
-  document.getElementById('main').innerHTML='<div class="state-box"><span class="spin"></span>Fetching forecast…</div>';
-  // Unique lats/lons to avoid duplicate fetches
-  var fetched={};
+  document.getElementById('main').innerHTML='<div class="state-box"><span class="spin"></span>Fetching forecast, waves &amp; tides…</div>';
+
   var fetches=[];
-  SPOTS.forEach(function(sp){
-    var key=sp.lat+'_'+sp.lon;
-    if(!fetched[key]){
-      fetched[key]=true;
-      fetches.push(fetchWx(sp));
-      fetches.push(fetchMarine(sp));
-      // Mirror Saunton data to saunton_sup
-      if(sp.id==='saunton_kite'){
-        wxData['saunton_sup']=null;
-        marineData['saunton_sup']=null;
-      }
-    }
-  });
-  // Also fetch Weston marine for Rest Bay tide proxy
-  if(!fetched['51.346_-2.9878']){
-    fetches.push(fetchMarine({id:'weston',lat:51.346,lon:-2.9878}));
-  }
+
+  // Wind: unique lat/lon only
+  fetches.push(fetchWx({id:'weston',      lat:51.346,  lon:-2.9878}));
+  fetches.push(fetchWx({id:'saunton_kite',lat:51.1059, lon:-4.2178}));
+  fetches.push(fetchWx({id:'restbay',     lat:51.4878, lon:-3.7127}));
+
+  // Waves: Stormglass (uses 10 requests/day — 3 spots = 3 requests)
+  fetches.push(fetchSG({id:'saunton_kite',lat:51.1059, lon:-4.2178}));
+  fetches.push(fetchSG({id:'restbay',     lat:51.4878, lon:-3.7127}));
+  // Weston wave data not needed for scoring (kite) but nice for popup
+  fetches.push(fetchSG({id:'weston',      lat:51.346,  lon:-2.9878}));
+
+  // Tides: ADMIRALTY via proxy
+  fetches.push(fetchTides('weston',  AD_STATIONS.weston));
+  fetches.push(fetchTides('saunton', AD_STATIONS.saunton));
+  fetches.push(fetchTides('restbay', AD_STATIONS.restbay));
+
   Promise.all(fetches).then(function(){
-    // Share Saunton data
+    // Share Saunton wx/sg across kite and sup
     wxData['saunton_sup']=wxData['saunton_kite'];
-    marineData['saunton_sup']=marineData['saunton_kite'];
+    sgData['saunton_sup']=sgData['saunton_kite'];
     btn.disabled=false; btn.textContent='↻ Refresh';
-    if(!SPOTS.some(function(s){return wxData[s.id]!=null;})){
+    if(!Object.keys(wxData).some(function(k){return wxData[k]!=null;})){
       document.getElementById('main').innerHTML='<div class="state-box err">Could not load forecast. Check your connection.<br><span class="retry-btn" onclick="init()">Try again</span></div>';
       return;
     }
