@@ -308,24 +308,20 @@ function scoreWeston(data,duskMins){
   breakdown.push({label:'Tide (HW 09:00–dusk)',score:tideScore,max:25,note:tideNote});
   total+=tideScore; weight+=25;
 
-  // Wind: read at exact HW hour for speed/direction, peak gust in ±2hr window
+  // Wind: all values read at exact HW hour
   var windWindowLabel;
   var wsKmh,gustKmh,wdDeg;
   if(bestHW&&bestHW.hourIdx!=null){
     var hi=bestHW.hourIdx;
-    // Wind speed and direction: exact HW hour
-    wsKmh=data.wsArr&&data.wsArr[hi]!=null?data.wsArr[hi]:avgIdx(data.wsArr,[hi-1,hi,hi+1]);
-    wdDeg=data.wdArr&&data.wdArr[hi]!=null?data.wdArr[hi]:avgIdx(data.wdArr,[hi-1,hi,hi+1]);
-    // Gust: peak in ±2hr window around HW
-    var gustWindow=[hi-2,hi-1,hi,hi+1,hi+2].filter(function(i){return i>=0&&i<data.hourlyLen;});
-    var gustVals=gustWindow.map(function(i){return data.gustArr?data.gustArr[i]:null;}).filter(function(v){return v!=null;});
-    gustKmh=gustVals.length?Math.max.apply(null,gustVals):null;
-    windWindowLabel='at HW ~'+bestHW.timeStr+' (peak gust ±2hrs)';
+    wsKmh  = data.wsArr   && data.wsArr[hi]   != null ? data.wsArr[hi]   : null;
+    wdDeg  = data.wdArr   && data.wdArr[hi]   != null ? data.wdArr[hi]   : null;
+    gustKmh= data.gustArr && data.gustArr[hi] != null ? data.gustArr[hi] : null;
+    windWindowLabel='at HW ~'+bestHW.timeStr;
   } else {
     var mid=data.middayIdx;
-    wsKmh=data.wsArr&&data.wsArr[mid]!=null?data.wsArr[mid]:null;
-    wdDeg=data.wdArr&&data.wdArr[mid]!=null?data.wdArr[mid]:null;
-    gustKmh=data.gustArr&&data.gustArr[mid]!=null?data.gustArr[mid]:null;
+    wsKmh  = data.wsArr   && data.wsArr[mid]   != null ? data.wsArr[mid]   : null;
+    wdDeg  = data.wdArr   && data.wdArr[mid]   != null ? data.wdArr[mid]   : null;
+    gustKmh= data.gustArr && data.gustArr[mid] != null ? data.gustArr[mid] : null;
     windWindowLabel='at midday (no qualifying HW)';
   }
   var wsMph=toMph(wsKmh);
