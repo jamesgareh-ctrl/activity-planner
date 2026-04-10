@@ -297,20 +297,20 @@ function fetchWx(sp){
   });
 }
 
-// ── FETCH: Stormglass waves (via proxy) ──────────────────
-function fetchSG(sp){
+// ── FETCH: Stormglass waves (via proxy — key added server-side in worker) ──
+function fetchSG(spotId, lat, lon){
   return new Promise(function(resolve){
     var now=new Date();
     var start=new Date(now); start.setHours(0,0,0,0);
     var end=new Date(start); end.setDate(end.getDate()+7);
-    var params='waveHeight,wavePeriod,waveDirection,swellHeight,swellPeriod,swellDirection,windWaveHeight,waterTemperature';
-    var sgUrl='https://api.stormglass.io/v2/weather/point?lat='+sp.lat+'&lng='+sp.lon+
+    var params='waveHeight,wavePeriod,waveDirection,swellHeight,swellPeriod,swellDirection,waterTemperature';
+    var sgUrl='https://api.stormglass.io/v2/weather/point?lat='+lat+'&lng='+lon+
       '&params='+params+'&start='+start.toISOString()+'&end='+end.toISOString();
     var proxyUrl=PROXY+'?url='+encodeURIComponent(sgUrl);
-    fetch(proxyUrl,{headers:{'Authorization':SG_KEY}})
+    fetch(proxyUrl)
       .then(function(r){return r.json();})
-      .then(function(j){sgData[sp.id]=j;resolve();})
-      .catch(function(){sgData[sp.id]=null;resolve();});
+      .then(function(j){sgData[spotId]=j;resolve();})
+      .catch(function(){sgData[spotId]=null;resolve();});
   });
 }
 
@@ -319,7 +319,7 @@ function fetchTides(spotId, stationId){
   return new Promise(function(resolve){
     var adUrl='https://admiraltyapi.azure-api.net/uktidalapi/api/V1/Stations/'+stationId+'/TidalEvents?duration=7';
     var proxyUrl=PROXY+'?url='+encodeURIComponent(adUrl);
-    fetch(proxyUrl,{headers:{'Ocp-Apim-Subscription-Key':AD_KEY}})
+    fetch(proxyUrl)
       .then(function(r){return r.json();})
       .then(function(events){
         // Group by date, convert GMT to local
@@ -1002,9 +1002,10 @@ function init(){
   fetches.push(fetchWx({id:'saunton_kite',lat:51.1059, lon:-4.2178}));
   fetches.push(fetchWx({id:'restbay',     lat:51.4878, lon:-3.7127}));
 
-  // Waves: Stormglass — Saunton and Rest Bay only (saves requests, Weston wave height irrelevant for kiting)
-  fetches.push(fetchSG({id:'saunton_kite',lat:51.1059, lon:-4.2178}));
-  fetches.push(fetchSG({id:'restbay',     lat:51.4878, lon:-3.7127}));
+  // Waves: Stormglass — Saunton and Rest Bay only (2 requests per day)
+  // Saunton kite & SUP share the same coordinates — one fetch covers both
+  fetches.push(fetchSG('saunton_kite', 51.1059, -4.2178));
+  fetches.push(fetchSG('restbay',      51.4878, -3.7127));
 
   // Tides: ADMIRALTY via proxy
   fetches.push(fetchTides('weston',  AD_STATIONS.weston));
