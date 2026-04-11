@@ -184,10 +184,10 @@ var EASYTIDE = {
 var AD_STATIONS = {weston:'0527',saunton:'0535',restbay:'0512'};
 
 var SPOTS=[
-  {id:'weston',      name:'Weston-super-Mare',region:'Somerset',       activity:'kite',lat:51.346, lon:-2.9878,scoring:'weston'},
-  {id:'saunton_kite',name:'Saunton Sands',    region:'Devon — Kite',   activity:'kite',lat:51.1059,lon:-4.2178,scoring:'saunton_kite'},
-  {id:'saunton_sup', name:'Saunton Sands',    region:'Devon — SUP',    activity:'sup', lat:51.1059,lon:-4.2178,scoring:'saunton_sup'},
-  {id:'restbay',     name:'Rest Bay Porthcawl',region:'South Wales',   activity:'sup', lat:51.4878,lon:-3.7127,scoring:'restbay'}
+  {id:'weston',      name:'Weston-super-Mare',region:'Weston',       activity:'kite',lat:51.346, lon:-2.9878,scoring:'weston'},
+  {id:'saunton_kite',name:'Saunton Sands',    region:'Saunton — Kite',   activity:'kite',lat:51.1059,lon:-4.2178,scoring:'saunton_kite'},
+  {id:'saunton_sup', name:'Saunton Sands',    region:'Saunton — SUP',    activity:'sup', lat:51.1059,lon:-4.2178,scoring:'saunton_sup'},
+  {id:'restbay',     name:'Rest Bay Porthcawl',region:'Rest Bay',   activity:'sup', lat:51.4878,lon:-3.7127,scoring:'restbay'}
 ];
 
 var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -319,6 +319,16 @@ function scoreSauntonKite(wx,waves,tideEvs,dusk){
   var wvS=0,wvN=waveFt!=null?Math.round(waveFt)+'ft':'—';
   if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft, >5ft NO-GO)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<=3){wvS=20;wvN=Math.round(waveFt)+'ft — good';}else{wvS=10;wvN=Math.round(waveFt)+'ft — just ok';}}else{wvS=10;wvN='No wave data';}
   bd.push({label:'Wave height',score:wvS,max:20,note:wvN});tot+=wvS;wt+=20;
+  // Swell direction — Saunton faces W. SW/W/NW swell reaches beach, N/NE largely blocked
+  var skSdS=5,skSdN='No swell data';
+  if(waves&&waves.swellDir!=null){
+    var skSd=d2dir(waves.swellDir);
+    if(['W','WSW','WNW','SW','NW'].indexOf(skSd)>=0){skSdS=10;skSdN=skSd+' — ideal, swell reaches beach';}
+    else if(['SSW','S','NNW'].indexOf(skSd)>=0){skSdS=6;skSdN=skSd+' — partial exposure';}
+    else if(['N','NNE','NE','ENE','E'].indexOf(skSd)>=0){skSdS=1;skSdN=skSd+' — largely blocked by headland';}
+    else{skSdS=4;skSdN=skSd+' — marginal';}
+  }
+  bd.push({label:'Swell direction',score:skSdS,max:10,note:skSdN});tot+=skSdS;wt+=10;
 
   // Wind at LW ±1hr
   var lw=findNearestLW(tideEvs,720);
@@ -366,6 +376,26 @@ function scoreSauntonSUP(wx,waves,tideEvs,dusk){
   var wvS=0,wvN=waveFt!=null?Math.round(waveFt)+'ft':'—';
   if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<1){wvS=25;wvN=Math.round(waveFt)+'ft — flat';}else if(waveFt<=2){wvS=20;wvN=Math.round(waveFt)+'ft — good';}else if(waveFt<=3){wvS=14;wvN=Math.round(waveFt)+'ft — ok';}else{wvS=7;wvN=Math.round(waveFt)+'ft — just ok';}}else{wvS=12;wvN='No wave data';}
   bd.push({label:'Wave height',score:wvS,max:25,note:wvN});tot+=wvS;wt+=25;
+  // Swell direction — Rest Bay faces SW. SW/S/W swell reaches bay, N/NE blocked
+  var rbSdS=5,rbSdN='No swell data';
+  if(waves&&waves.swellDir!=null){
+    var rbSd=d2dir(waves.swellDir);
+    if(['SW','WSW','W','SSW','S'].indexOf(rbSd)>=0){rbSdS=10;rbSdN=rbSd+' — ideal swell for Rest Bay';}
+    else if(['NW','WNW','SE','SSE'].indexOf(rbSd)>=0){rbSdS=5;rbSdN=rbSd+' — partial swell exposure';}
+    else if(['N','NNE','NE','ENE','E'].indexOf(rbSd)>=0){rbSdS=1;rbSdN=rbSd+' — swell largely blocked';}
+    else{rbSdS=3;rbSdN=rbSd+' — marginal direction';}
+  }
+  bd.push({label:'Swell direction',score:rbSdS,max:10,note:rbSdN});tot+=rbSdS;wt+=10;
+  // Swell direction — same W-facing beach as Saunton kite
+  var ssSdS=4,ssSdN='No swell data';
+  if(waves&&waves.swellDir!=null){
+    var ssSd=d2dir(waves.swellDir);
+    if(['W','WSW','WNW','SW','NW'].indexOf(ssSd)>=0){ssSdS=8;ssSdN=ssSd+' — swell reaching beach';}
+    else if(['SSW','S','NNW'].indexOf(ssSd)>=0){ssSdS=5;ssSdN=ssSd+' — partial swell';}
+    else if(['N','NNE','NE','ENE','E'].indexOf(ssSd)>=0){ssSdS=1;ssSdN=ssSd+' — swell blocked';}
+    else{ssSdS=3;ssSdN=ssSd+' — marginal';}
+  }
+  bd.push({label:'Swell direction',score:ssSdS,max:8,note:ssSdN});tot+=ssSdS;wt+=8;
 
   // Wind at LW ±1hr
   var lw=findNearestLW(tideEvs,720);
@@ -532,11 +562,18 @@ function fetchTides(key,stationId){
 function fetchSG(key,lat,lon){
   return new Promise(function(resolve){
     // Cache in localStorage by spot + today's date — free refreshes all day
-    var today=new Date().toISOString().split('T')[0];
+    var today=new Date().toISOString().split('T')[0]; // UTC date — consistent across devices/timezones
     var cacheKey='sg_'+key+'_'+today;
     try{
       var cached=localStorage.getItem(cacheKey);
-      if(cached){ sgData[key]=JSON.parse(cached); return resolve(); }
+      if(cached){
+        var parsed=JSON.parse(cached);
+        // Validate it has actual hourly wave data
+        if(parsed&&parsed.hours&&parsed.hours.length>0){
+          sgData[key]=parsed;
+          return resolve();
+        }
+      }
     }catch(e){}
     // Not cached — fetch via proxy (uses 1 of 10 daily requests)
     var now=new Date(),start=new Date(now);start.setHours(0,0,0,0);
@@ -549,10 +586,17 @@ function fetchSG(key,lat,lon){
       .then(function(j){
         sgData[key]=j;
         try{
-          Object.keys(localStorage).forEach(function(k){
-            if(k.startsWith('sg_'+key+'_')&&k!==cacheKey)localStorage.removeItem(k);
-          });
-          localStorage.setItem(cacheKey,JSON.stringify(j));
+          // Clear old cache entries for this spot
+          var keysToRemove=[];
+          for(var i=0;i<localStorage.length;i++){
+            var k=localStorage.key(i);
+            if(k&&k.startsWith('sg_'+key+'_')&&k!==cacheKey)keysToRemove.push(k);
+          }
+          keysToRemove.forEach(function(k){localStorage.removeItem(k);});
+          // Only cache if we got valid data
+          if(j&&j.hours&&j.hours.length>0){
+            localStorage.setItem(cacheKey,JSON.stringify(j));
+          }
         }catch(e){}
         resolve();
       })
@@ -601,7 +645,9 @@ function render(){
             (wxIcon?'<div style="font-size:12px;line-height:1">'+wxIcon+'</div>':'')+
             '<div class="sc-score">'+c.score.toFixed(1)+'</div>'+
             '<div class="sc-bar"><div class="sc-fill" style="width:'+Math.round(c.score*10)+'%"></div></div>'+
-            '<div class="sc-wind">'+rws+' mph</div>'+
+            (sid==='saunton_sup'||sid==='restbay'?
+              '<div class="sc-wind">'+(c.waves&&c.waves.waveHeight!=null?Math.round(mToFt(c.waves.waveHeight))+'ft':'—ft')+'</div>'
+            : '<div class="sc-wind">'+rws+' mph</div>')+
             '<div class="sc-dir '+dirCls(sid,dir)+'">'+dir+'</div></div></td>';
         }
       }
