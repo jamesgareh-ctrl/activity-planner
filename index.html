@@ -650,7 +650,13 @@ function render(){
             '<div class="sc-score">'+c.score.toFixed(1)+'</div>'+
             '<div class="sc-bar"><div class="sc-fill" style="width:'+Math.round(c.score*10)+'%"></div></div>'+
             (sid==='saunton_sup'||sid==='restbay'?
-              '<div class="sc-wind">'+(c.waves&&c.waves.waveHeight!=null?Math.round(mToFt(c.waves.waveHeight))+'ft':'—ft')+'</div>'
+              (function(){
+                var sType2=(sid==='restbay')?'restbay':'saunton';
+                var sd=c.waves&&(c.waves.swellDir!=null?c.waves.swellDir:c.waves.waveDir!=null?c.waves.waveDir:null);
+                var m=sd!=null?swellDirMultiplier(sd,sType2):1;
+                var h=c.waves&&c.waves.waveHeight!=null?(Math.round(mToFt(c.waves.waveHeight)*m*10)/10).toFixed(1)+'ft':'—ft';
+                return'<div class="sc-wind">'+h+'</div>';
+              })()
             : '<div class="sc-wind">'+rws+' mph</div>')+
             '<div class="sc-dir '+dirCls(sid,dir)+'">'+dir+'</div></div></td>';
         }
@@ -713,13 +719,18 @@ function openPop(sid,di){
     document.getElementById('popWaveNote').textContent='';
   } else {
     var spotType2=(sid==='saunton_kite'||sid==='saunton_sup')?'saunton':(sid==='restbay'?'restbay':null);
-    var popMult=spotType2&&w.swellDir!=null?swellDirMultiplier(w.swellDir,spotType2):1.0;
-    var whFt=mToFt(w.waveHeight)!=null?mToFt(w.waveHeight)*popMult:null;
-    var swFt=mToFt(w.swellHeight)!=null?mToFt(w.swellHeight)*popMult:null;
+    var popSwellDir=w.swellDir!=null?w.swellDir:(w.waveDir!=null?w.waveDir:null);
+    var popMult=spotType2&&popSwellDir!=null?swellDirMultiplier(popSwellDir,spotType2):1.0;
+    var whRawFt=mToFt(w.waveHeight);
+    var whFt=whRawFt!=null?whRawFt*popMult:null;
+    var swRawFt=mToFt(w.swellHeight);
+    var swFt=swRawFt!=null?swRawFt*popMult:null;
+    var multPct=Math.round(popMult*100);
+    var adjNote=popMult<1?' ('+multPct+'% dir adj, raw '+(whRawFt!=null?Math.round(whRawFt)+'ft':'—')+')':'';
     document.getElementById('popWaves').innerHTML=
-      pcell('Wave height',whFt!=null?Math.round(whFt)+'ft':'—',w.waveHeight!=null?'('+w.waveHeight.toFixed(2)+'m)':'')+
-      pcell('Swell',swFt!=null?Math.round(swFt)+'ft':'—',w.swellPeriod!=null?w.swellPeriod.toFixed(0)+'s period':'')+
-      pcell('Swell dir',d2dir(w.swellDir),'','');
+      pcell('Wave height',whFt!=null?(Math.round(whFt*10)/10).toFixed(1)+'ft':'—',adjNote)+
+      pcell('Swell dir',d2dir(popSwellDir!=null?popSwellDir:w.waveDir),'','')+
+      pcell('Period',w.swellPeriod!=null?w.swellPeriod.toFixed(0)+'s':w.wavePeriod!=null?w.wavePeriod.toFixed(0)+'s':'—','','');
     document.getElementById('popWaveNote').textContent='Source: '+(w.source||'—');
   }
   // Tides
