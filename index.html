@@ -332,7 +332,7 @@ function scoreWeston(wx,waves,tideEvs,dusk){
 
   // 3. WIND SPEED
   var mph=toMph(w.ws),ws2=0,wn2=mph!=null?Math.round(mph)+' mph':'—';
-  if(mph!=null){if(mph>=18&&mph<=24){ws2=25;wn2=Math.round(mph)+' mph — ideal';}else if(mph>=14&&mph<18){ws2=18;wn2=Math.round(mph)+' mph — good (light)';}else if(mph>24&&mph<=30){ws2=18;wn2=Math.round(mph)+' mph — good (strong)';}else if(mph>=10&&mph<14){ws2=8;wn2=Math.round(mph)+' mph — too light';}else if(mph>30&&mph<=35){ws2=8;wn2=Math.round(mph)+' mph — strong';}else if(mph>35){ws2=2;wn2=Math.round(mph)+' mph — too strong';}else{ws2=2;wn2=Math.round(mph)+' mph — too light';}}
+  if(mph!=null){if(mph<14){noGo=true;noGoReasons.push('Wind too light ('+Math.round(mph)+' mph, <14mph NO-GO)');ws2=0;wn2=Math.round(mph)+' mph — too light, NO-GO';}else if(mph>=18&&mph<=24){ws2=25;wn2=Math.round(mph)+' mph — ideal';}else if(mph>=14&&mph<18){ws2=18;wn2=Math.round(mph)+' mph — good (light)';}else if(mph>24&&mph<=30){ws2=18;wn2=Math.round(mph)+' mph — good (strong)';}else if(mph>30&&mph<=35){ws2=8;wn2=Math.round(mph)+' mph — strong';}else if(mph>35){ws2=2;wn2=Math.round(mph)+' mph — too strong';}}
   bd.push({label:'Wind speed',score:ws2,max:25,note:wn2});tot+=ws2;wt+=25;
 
   // 4. TEMP
@@ -369,7 +369,7 @@ function scoreSauntonKite(wx,waves,tideEvs,dusk){
 
   // 3. WIND SPEED
   var mph=toMph(w.ws),ws2=0,wn2=mph!=null?Math.round(mph)+' mph':'—';
-  if(mph!=null){if(mph>=18&&mph<=24){ws2=20;wn2=Math.round(mph)+' mph — ideal';}else if(mph>=14&&mph<18){ws2=14;wn2=Math.round(mph)+' mph — good (light)';}else if(mph>24&&mph<=30){ws2=14;wn2=Math.round(mph)+' mph — good (strong)';}else if(mph>=10&&mph<14){ws2=6;wn2=Math.round(mph)+' mph — too light';}else if(mph>30&&mph<=35){ws2=6;wn2=Math.round(mph)+' mph — strong';}else if(mph>35){ws2=2;wn2=Math.round(mph)+' mph — too strong';}else{ws2=2;wn2=Math.round(mph)+' mph — too light';}}
+  if(mph!=null){if(mph<14){noGo=true;noGoReasons.push('Wind too light ('+Math.round(mph)+' mph, <14mph NO-GO)');ws2=0;wn2=Math.round(mph)+' mph — too light, NO-GO';}else if(mph>=18&&mph<=24){ws2=20;wn2=Math.round(mph)+' mph — ideal';}else if(mph>=14&&mph<18){ws2=14;wn2=Math.round(mph)+' mph — good (light)';}else if(mph>24&&mph<=30){ws2=14;wn2=Math.round(mph)+' mph — good (strong)';}else if(mph>30&&mph<=35){ws2=6;wn2=Math.round(mph)+' mph — strong';}else if(mph>35){ws2=2;wn2=Math.round(mph)+' mph — too strong';}}
   bd.push({label:'Wind speed',score:ws2,max:20,note:wn2});tot+=ws2;wt+=20;
 
   // 4. TIDE
