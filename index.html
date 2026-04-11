@@ -397,7 +397,7 @@ function scoreSauntonSUP(wx,waves,tideEvs,dusk){
   var swellDirNote=waves&&waves.swellDir!=null?d2dir(waves.swellDir)+' swell':'';
   var swellMult=waves&&waves.swellDir!=null?swellDirMultiplier(waves.swellDir,'saunton'):1;
   var wvS=0,wvN=waveFt!=null?Math.round(waveFt)+'ft'+(swellMult<0.8?' (dir adj)':''):'—';
-  if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<1){wvS=25;wvN=Math.round(waveFt)+'ft — flat';}else if(waveFt<=2){wvS=20;wvN=Math.round(waveFt)+'ft — good';}else if(waveFt<=3){wvS=14;wvN=Math.round(waveFt)+'ft — ok';}else{wvS=7;wvN=Math.round(waveFt)+'ft — just ok';}}else{wvS=12;wvN='No wave data';}
+  if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<2){noGo=true;noGoReasons.push('Waves too small (~'+Math.round(waveFt*10)/10+'ft, <2ft NO-GO)');wvS=0;wvN=Math.round(waveFt*10)/10+'ft — too small';}else if(waveFt<=2.5){wvS=14;wvN=Math.round(waveFt*10)/10+'ft — ok';}else if(waveFt<=3){wvS=20;wvN=Math.round(waveFt*10)/10+'ft — good';}else if(waveFt<=4){wvS=25;wvN=Math.round(waveFt*10)/10+'ft — ideal';}else if(waveFt<=5){wvS=18;wvN=Math.round(waveFt*10)/10+'ft — getting big';}}}else{wvS=12;wvN='No wave data';}
   var sdNote=swellDirNote+(swellMult<1?' · '+Math.round(swellMult*100)+'% exposure':'');
   bd.push({label:'Wave height',score:wvS,max:25,note:wvN+(sdNote?' · '+sdNote:'')});tot+=wvS;wt+=25;
 
@@ -454,7 +454,7 @@ function scoreRestBay(wx,waves,tideEvs,westonTideEvs,dusk){
   // 2. WAVE HEIGHT
   var waveFt=mToFt(waves?waves.waveHeight:null);
   var wvS=0,wvN=waveFt!=null?Math.round(waveFt)+'ft':'—';
-  if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<1){wvS=25;wvN=Math.round(waveFt)+'ft — flat';}else if(waveFt<=2){wvS=20;wvN=Math.round(waveFt)+'ft — good';}else if(waveFt<=3){wvS=14;wvN=Math.round(waveFt)+'ft — ok';}else{wvS=7;wvN=Math.round(waveFt)+'ft — just ok';}}else{wvS=12;wvN='No wave data';}
+  if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<2){noGo=true;noGoReasons.push('Waves too small (~'+Math.round(waveFt*10)/10+'ft, <2ft NO-GO)');wvS=0;wvN=Math.round(waveFt*10)/10+'ft — too small';}else if(waveFt<=2.5){wvS=14;wvN=Math.round(waveFt*10)/10+'ft — ok';}else if(waveFt<=3){wvS=20;wvN=Math.round(waveFt*10)/10+'ft — good';}else if(waveFt<=4){wvS=25;wvN=Math.round(waveFt*10)/10+'ft — ideal';}else if(waveFt<=5){wvS=18;wvN=Math.round(waveFt*10)/10+'ft — getting big';}}}else{wvS=12;wvN='No wave data';}
   bd.push({label:'Wave height',score:wvS,max:25,note:wvN});tot+=wvS;wt+=25;
 
   // 3. WIND SPEED
