@@ -318,7 +318,7 @@ function scoreWeston(wx,waves,tideEvs,dusk){
 
   // Wind at HW ±1hr
   var w={ws:null,wd:null,gust:null},wLabel='midday';
-  if(bestHW&&wx){var hi=wx.dayBase+bestHW.hourIdx;var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of HW '+bestHW.localTime;}
+  if(bestHW&&wx){var hi=wxIdxForHour(wx,bestHW.hourIdx);var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of HW '+bestHW.localTime;}
   else if(wx){w=windAt(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);}
   wx._ws=w.ws;wx._wd=w.wd;wx._gust=w.gust;wx._wLabel=wLabel;
 
@@ -355,7 +355,7 @@ function scoreSauntonKite(wx,waves,tideEvs,dusk){
   // Wind at LW ±1hr
   var lw=findNearestLW(tideEvs,720);
   var w={ws:null,wd:null,gust:null},wLabel='midday';
-  if(lw&&wx){var hi=wx.dayBase+lw.ev.hourIdx;var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of LW '+lw.ev.localTime;}
+  if(lw&&wx){var hi=wxIdxForHour(wx,lw.ev.hourIdx);var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of LW '+lw.ev.localTime;}
   else if(wx){w=windAt(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);}
   wx._ws=w.ws;wx._wd=w.wd;wx._gust=w.gust;wx._wLabel=wLabel;
 
@@ -404,7 +404,7 @@ function scoreSauntonSUP(wx,waves,tideEvs,dusk){
   // Wind at LW ±1hr
   var lw=findNearestLW(tideEvs,720);
   var w={ws:null,wd:null,gust:null},wLabel='midday';
-  if(lw&&wx){var hi=wx.dayBase+lw.ev.hourIdx;var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of LW '+lw.ev.localTime;}
+  if(lw&&wx){var hi=wxIdxForHour(wx,lw.ev.hourIdx);var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of LW '+lw.ev.localTime;}
   else if(wx){w=windAt(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);}
   wx._ws=w.ws;wx._wd=w.wd;wx._gust=w.gust;wx._wLabel=wLabel;
 
@@ -447,7 +447,7 @@ function scoreRestBay(wx,waves,tideEvs,westonTideEvs,dusk){
   // Wind at LW ±1hr (Weston proxy)
   var lw=findNearestLW(westonTideEvs,720);
   var w={ws:null,wd:null,gust:null},wLabel='midday';
-  if(lw&&wx){var hi=wx.dayBase+lw.ev.hourIdx;var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of LW '+lw.ev.localTime+' (Weston proxy)';}
+  if(lw&&wx){var hi=wxIdxForHour(wx,lw.ev.hourIdx);var idx=[hi-1,hi,hi+1].filter(function(i){return i>=0&&i<wx.hourlyLen;});w=windAt(wx,idx);wLabel='avg ±1hr of LW '+lw.ev.localTime+' (Weston proxy)';}
   else if(wx){w=windAt(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);}
   wx._ws=w.ws;wx._wd=w.wd;wx._gust=w.gust;wx._wLabel=wLabel;
 
@@ -482,13 +482,61 @@ function scoreRestBay(wx,waves,tideEvs,westonTideEvs,dusk){
 // Extract weather arrays for a day
 function extractWx(json,di){
   if(!json||!json.hourly)return null;
-  var h=json.hourly,b=di*24,mid=b+11;
+  var h=json.hourly;
+  var times=h.time||[];
+  // Find indices for this day by matching date string in time array
+  // This handles UKMO switching from hourly to 3-hourly to 6-hourly
+  var d=new Date(); d.setDate(d.getDate()+di);
+  var dayStr=d.toISOString().split('T')[0]; // YYYY-MM-DD
+  var dayIndices=[];
+  for(var i=0;i<times.length;i++){
+    if(times[i]&&times[i].startsWith(dayStr))dayIndices.push(i);
+  }
+  if(!dayIndices.length){
+    // Fallback to index arithmetic if no time array
+    var b=di*24,mid=b+11;
+    return{wsArr:h.wind_speed_10m||null,wdArr:h.wind_direction_10m||null,gustArr:h.wind_gusts_10m||null,
+      airTemp:h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
+      precip:avgArr(h.precipitation_probability,mid,3),
+      wxCode:h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
+      middayIdx:mid,hourlyLen:(h.wind_speed_10m||[]).length,dayBase:b,
+      times:times,_ws:null,_wd:null,_gust:null,_wLabel:''};
+  }
+  // Find the midday index — closest to 12:00 or 13:00 local
+  var midIdx=dayIndices[0];
+  var minDiff=9999;
+  dayIndices.forEach(function(i){
+    if(!times[i])return;
+    var tp=times[i].split('T');
+    if(tp.length<2)return;
+    var hm=tp[1].substring(0,5).split(':');
+    var mins=parseInt(hm[0])*60+(parseInt(hm[1])||0);
+    var diff=Math.abs(mins-720); // closest to noon
+    if(diff<minDiff){minDiff=diff;midIdx=i;}
+  });
   return{wsArr:h.wind_speed_10m||null,wdArr:h.wind_direction_10m||null,gustArr:h.wind_gusts_10m||null,
-    airTemp:h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
-    precip:avgArr(h.precipitation_probability,mid,3),
-    wxCode:h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
-    middayIdx:mid,hourlyLen:(h.wind_speed_10m||[]).length,dayBase:b,
+    airTemp:h.temperature_2m&&h.temperature_2m[midIdx]!=null?h.temperature_2m[midIdx]:null,
+    precip:avgArr(h.precipitation_probability,midIdx,3),
+    wxCode:h.weather_code&&h.weather_code[midIdx]!=null?h.weather_code[midIdx]:null,
+    middayIdx:midIdx,hourlyLen:(h.wind_speed_10m||[]).length,
+    dayBase:dayIndices[0],dayIndices:dayIndices,times:times,
     _ws:null,_wd:null,_gust:null,_wLabel:''};
+}
+
+// Find the index in wx time array closest to a given hour (0-23) for a given day
+function wxIdxForHour(wx, targetHour){
+  if(!wx||!wx.times||!wx.dayIndices||!wx.dayIndices.length) return wx?wx.middayIdx:null;
+  var best=wx.dayIndices[0], bestDiff=9999;
+  wx.dayIndices.forEach(function(i){
+    var t=wx.times[i];
+    if(!t)return;
+    var tp=t.split('T');
+    if(tp.length<2)return;
+    var h=parseInt(tp[1].substring(0,2));
+    var diff=Math.abs(h-targetHour);
+    if(diff<bestDiff){bestDiff=diff;best=i;}
+  });
+  return best;
 }
 
 function getTideEvs(spotId,di){
