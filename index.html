@@ -484,41 +484,48 @@ function extractWx(json,di){
   if(!json||!json.hourly)return null;
   var h=json.hourly;
   var times=h.time||[];
-  // Find indices for this day by matching date string in time array
-  // This handles UKMO switching from hourly to 3-hourly to 6-hourly
+  // Open-Meteo returns times in local timezone (Europe/London) as YYYY-MM-DDTHH:MM
+  // Use local date string to match, not UTC
   var d=new Date(); d.setDate(d.getDate()+di);
-  var dayStr=d.toISOString().split('T')[0]; // YYYY-MM-DD
+  var yr=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dy=String(d.getDate()).padStart(2,'0');
+  var dayStr=yr+'-'+mo+'-'+dy;
   var dayIndices=[];
   for(var i=0;i<times.length;i++){
-    if(times[i]&&times[i].startsWith(dayStr))dayIndices.push(i);
+    if(times[i]&&times[i].substring(0,10)===dayStr)dayIndices.push(i);
+  }
+  // If still empty, try the next day (handles edge cases around midnight)
+  if(!dayIndices.length){
+    var d2=new Date(d); d2.setDate(d2.getDate()+1);
+    var ds2=d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0')+'-'+String(d2.getDate()).padStart(2,'0');
+    for(var i=0;i<times.length;i++){
+      if(times[i]&&times[i].substring(0,10)===ds2)dayIndices.push(i);
+    }
   }
   if(!dayIndices.length){
-    // Fallback to index arithmetic if no time array
-    var b=di*24,mid=b+11;
+    // Last resort fallback
+    var b=di*24,mid=Math.min(b+11,times.length-1);
     return{wsArr:h.wind_speed_10m||null,wdArr:h.wind_direction_10m||null,gustArr:h.wind_gusts_10m||null,
       airTemp:h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
       precip:avgArr(h.precipitation_probability,mid,3),
       wxCode:h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
-      middayIdx:mid,hourlyLen:(h.wind_speed_10m||[]).length,dayBase:b,
-      times:times,_ws:null,_wd:null,_gust:null,_wLabel:''};
+      middayIdx:mid,hourlyLen:times.length,dayBase:b,
+      times:times,dayIndices:[],_ws:null,_wd:null,_gust:null,_wLabel:''};
   }
-  // Find the midday index — closest to 12:00 or 13:00 local
-  var midIdx=dayIndices[0];
-  var minDiff=9999;
+  // Find midday index — closest to noon
+  var midIdx=dayIndices[0],minDiff=9999;
   dayIndices.forEach(function(i){
     if(!times[i])return;
     var tp=times[i].split('T');
     if(tp.length<2)return;
-    var hm=tp[1].substring(0,5).split(':');
-    var mins=parseInt(hm[0])*60+(parseInt(hm[1])||0);
-    var diff=Math.abs(mins-720); // closest to noon
+    var mins=parseInt(tp[1].substring(0,2))*60+(parseInt(tp[1].substring(3,5))||0);
+    var diff=Math.abs(mins-720);
     if(diff<minDiff){minDiff=diff;midIdx=i;}
   });
   return{wsArr:h.wind_speed_10m||null,wdArr:h.wind_direction_10m||null,gustArr:h.wind_gusts_10m||null,
     airTemp:h.temperature_2m&&h.temperature_2m[midIdx]!=null?h.temperature_2m[midIdx]:null,
     precip:avgArr(h.precipitation_probability,midIdx,3),
     wxCode:h.weather_code&&h.weather_code[midIdx]!=null?h.weather_code[midIdx]:null,
-    middayIdx:midIdx,hourlyLen:(h.wind_speed_10m||[]).length,
+    middayIdx:midIdx,hourlyLen:times.length,
     dayBase:dayIndices[0],dayIndices:dayIndices,times:times,
     _ws:null,_wd:null,_gust:null,_wLabel:''};
 }
