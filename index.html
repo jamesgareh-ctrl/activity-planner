@@ -40,6 +40,7 @@
   .activity-pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:6px;margin-top:4px;font-weight:600}
   .pill-kite{background:#dbeafe;color:#1e40af}
   .pill-sup{background:#d1fae5;color:#065f46}
+  .pill-cycle{background:#fce7f3;color:#9d174d}
   .score-cell{background:#fff;border-radius:10px;padding:9px 5px;text-align:center;cursor:pointer;transition:transform 0.12s ease,box-shadow 0.12s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:88px;-webkit-tap-highlight-color:transparent;position:relative}
   .score-cell:hover,.score-cell:active{transform:scale(1.05);box-shadow:0 4px 14px rgba(0,0,0,0.13);z-index:2}
   .score-cell.is-today{outline:2px solid #2563eb;outline-offset:-2px}
@@ -187,7 +188,8 @@ var SPOTS=[
   {id:'weston',      name:'Weston-super-Mare',region:'Weston',       activity:'kite',lat:51.346, lon:-2.9878,scoring:'weston'},
   {id:'saunton_kite',name:'Saunton Sands',    region:'Saunton — Kite',   activity:'kite',lat:51.1059,lon:-4.2178,scoring:'saunton_kite'},
   {id:'saunton_sup', name:'Saunton Sands',    region:'Saunton — SUP',    activity:'sup', lat:51.1059,lon:-4.2178,scoring:'saunton_sup'},
-  {id:'restbay',     name:'Rest Bay Porthcawl',region:'Rest Bay',   activity:'sup', lat:51.4878,lon:-3.7127,scoring:'restbay'}
+  {id:'restbay',     name:'Rest Bay Porthcawl',region:'Rest Bay',   activity:'sup', lat:51.4878,lon:-3.7127,scoring:'restbay'},
+  {id:'cycling',      name:'Long Ashton',          region:'Bristol',    activity:'cycle',lat:51.4364,lon:-2.6519,scoring:'cycling'}
 ];
 
 var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -517,6 +519,50 @@ function getTideEvs(spotId,di){
   return (data&&data[ds])||[];
 }
 
+function scoreCycling(wx,dusk){
+  var noGo=false,noGoReasons=[],bd=[],tot=0,wt=0;
+
+  // Wind at midday — no tide dependency
+  var w={ws:null,wd:null,gust:null};
+  if(wx){w=windAt(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);}
+  wx._ws=w.ws;wx._wd=w.wd;wx._gust=w.gust;wx._wLabel='midday average';
+
+  // 1. WIND SPEED — Weight 50. <10mph ideal, >10mph scores lower, no hard upper NO-GO
+  var mph=toMph(w.ws),ws2=0,wn2=mph!=null?Math.round(mph)+' mph':'—';
+  if(mph!=null){
+    if(mph<10){ws2=50;wn2=Math.round(mph)+' mph — ideal';}
+    else if(mph<15){ws2=35;wn2=Math.round(mph)+' mph — manageable';}
+    else if(mph<20){ws2=20;wn2=Math.round(mph)+' mph — tough';}
+    else if(mph<25){ws2=8;wn2=Math.round(mph)+' mph — very tough';}
+    else{ws2=2;wn2=Math.round(mph)+' mph — too windy';}
+  }
+  bd.push({label:'Wind speed',score:ws2,max:50,note:wn2});tot+=ws2;wt+=50;
+
+  // 2. TEMPERATURE — Weight 30. <5°C NO-GO, 5-10°C lower rating, ≥10°C ideal
+  var temp=wx?wx.airTemp:null,ts=0,tn=temp!=null?Math.round(temp)+'°C':'—';
+  if(temp!=null){
+    if(temp<5){noGo=true;noGoReasons.push('Too cold ('+Math.round(temp)+'°C, <5°C NO-GO)');ts=0;tn=Math.round(temp)+'°C — too cold, NO-GO';}
+    else if(temp<10){ts=15;tn=Math.round(temp)+'°C — chilly but ok';}
+    else if(temp<15){ts=25;tn=Math.round(temp)+'°C — good';}
+    else{ts=30;tn=Math.round(temp)+'°C — ideal';}
+  }
+  bd.push({label:'Temperature',score:ts,max:30,note:tn});tot+=ts;wt+=30;
+
+  // 3. WEATHER — Weight 20. Rain = bad, clear = ideal
+  var wxCode=wx?wx.wxCode:null,wxS=0,wxN='—';
+  if(wxCode!=null){
+    if(wxCode<=2){wxS=20;wxN=(WX_ICONS[wxCode]||'')+' '+(WX_CODES[wxCode]||'')+' — ideal';}
+    else if(wxCode===3){wxS=16;wxN='☁️ Overcast — ok';}
+    else if(wxCode>=51&&wxCode<=55){wxS=8;wxN='🌦️ Light drizzle — not ideal';}
+    else if(wxCode>=61&&wxCode<=65){wxS=3;wxN='🌧️ Rain — poor';}
+    else if(wxCode>=80){wxS=2;wxN='⛈️ Showers — poor';}
+    else{wxS=10;wxN=(WX_ICONS[wxCode]||'')+' '+(WX_CODES[wxCode]||'');}
+  }
+  bd.push({label:'Weather',score:wxS,max:20,note:wxN});tot+=wxS;wt+=20;
+
+  return{score:noGo?0:Math.min(10,(tot/wt)*10),noGo:noGo,noGoReasons:noGoReasons,breakdown:bd};
+}
+
 function buildComp(){
   comp={};
   SPOTS.forEach(function(sp){
@@ -534,7 +580,8 @@ function buildComp(){
       if(sp.scoring==='weston')           result=scoreWeston(wx,waves,tideEvs,dusk);
       else if(sp.scoring==='saunton_kite')result=scoreSauntonKite(wx,waves,tideEvs,dusk);
       else if(sp.scoring==='saunton_sup') result=scoreSauntonSUP(wx,waves,tideEvs,dusk);
-      else                                result=scoreRestBay(wx,waves,tideEvs,westonEvs,dusk);
+      else if(sp.scoring==='restbay')     result=scoreRestBay(wx,waves,tideEvs,westonEvs,dusk);
+      else if(sp.scoring==='cycling')      result=scoreCycling(wx,dusk);
       comp[sp.id].push({
         score:result.score,noGo:result.noGo,noGoReasons:result.noGoReasons,breakdown:result.breakdown,
         _ws:wx._ws,_wd:wx._wd,_gust:wx._gust,_wLabel:wx._wLabel,
@@ -645,13 +692,20 @@ function render(){
   var html='<table><thead><tr><th class="th-spacer"></th>';
   for(var d=0;d<7;d++){var inf=dayInfo(d);html+='<th class="th-day'+(d===0?' is-today':'')+'"><div class="th-day-label">'+inf.short+'</div><div class="th-day-date">'+inf.date+'</div></th>';}
   html+='</tr></thead><tbody>';
-  var sections=[{label:'Weston-super-Mare',ids:['weston']},{label:'Saunton Sands',ids:['saunton_kite','saunton_sup']},{label:'Rest Bay, Porthcawl',ids:['restbay']}];
+  var sections=[{label:'Weston-super-Mare',ids:['weston']},{label:'Saunton Sands',ids:['saunton_kite','saunton_sup']},{label:'Rest Bay, Porthcawl',ids:['restbay']},{label:'Bristol',ids:['cycling']}];
   sections.forEach(function(sec){
     html+='<tr class="section-row"><td colspan="8">'+sec.label+'</td></tr>';
     sec.ids.forEach(function(sid){
       var sp=SPOTS.filter(function(s){return s.id===sid;})[0];if(!sp)return;
-      var pc=sp.activity==='kite'?'pill-kite':'pill-sup',pl=sp.activity==='kite'?'Kitesurfing':'Paddleboarding';
-      html+='<tr class="spot-row"><td><div class="spot-label"><div class="spot-label-name">'+sp.region+'</div><span class="activity-pill '+pc+'">'+pl+'</span></div></td>';
+      var pc=sp.activity==='kite'?'pill-kite':sp.activity==='cycle'?'pill-cycle':'pill-sup';
+      var pl=sp.activity==='kite'?'Kitesurfing':sp.activity==='cycle'?'Road Cycling':'Paddleboarding';
+      var icons={
+        kite:'<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' width=\'12\' height=\'12\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M12 3 L21 12 L12 20 L3 12 Z\'/><line x1=\'12\' y1=\'20\' x2=\'12\' y2=\'24\'/><line x1=\'3\' y1=\'12\' x2=\'8\' y2=\'17\'/></svg>',
+        sup: '<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' width=\'12\' height=\'12\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><ellipse cx=\'12\' cy=\'19\' rx=\'8\' ry=\'2.5\'/><line x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'/><path d=\'M8 10 Q12 7 16 10\'/></svg>',
+        cycle:'<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' width=\'12\' height=\'12\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><circle cx=\'6\' cy=\'16\' r=\'3.5\'/><circle cx=\'18\' cy=\'16\' r=\'3.5\'/><path d=\'M6 16 L10 8 L18 16\'/><path d=\'M10 8 L14 8\'/><path d=\'M12 4 L14 8\'/></svg>'
+      };
+      var actIcon=sp.activity==='kite'?icons.kite:sp.activity==='cycle'?icons.cycle:icons.sup;
+      html+='<tr class="spot-row"><td><div class="spot-label"><div class="spot-label-name">'+sp.region+'</div><span class="activity-pill '+pc+'" style="display:inline-flex;align-items:center;gap:4px">'+actIcon+pl+'</span></div></td>';
       for(var d=0;d<7;d++){
         var c=comp[sid]&&comp[sid][d],tc=d===0?' is-today':'';
         if(!c){html+='<td><div class="score-cell band-poor'+tc+'"><div class="sc-score" style="font-size:14px">—</div></div></td>';continue;}
@@ -699,7 +753,7 @@ function openPop(sid,di){
   var sp=SPOTS.filter(function(s){return s.id===sid;})[0];
   var c=comp[sid]&&comp[sid][di];if(!c)return;
   var inf=dayInfo(di),sc=c.score,bl=bandLabel(sc,c.noGo);
-  document.getElementById('popTitle').textContent=sp.name+' — '+(sp.activity==='kite'?'Kitesurfing':'Paddleboarding');
+  document.getElementById('popTitle').textContent=sp.name+' — '+(sp.activity==='kite'?'🪁 Kitesurfing':sp.activity==='cycle'?'🚴 Road Cycling':'🏄 Paddleboarding');
   document.getElementById('popSubtitle').textContent=inf.long+' · '+inf.date;
   var sn=document.getElementById('popScoreNum');sn.textContent=c.noGo?'—':sc.toFixed(1);sn.style.color=bandColor(sc,c.noGo);
   var sl=document.getElementById('popScoreLabel');sl.textContent=bl[0];sl.className='pop-score-label '+bl[1];
@@ -733,8 +787,8 @@ function openPop(sid,di){
     pcell('Rain chance',c.precip!=null?Math.round(c.precip)+'%':'—','','');
   // Waves
   var w=c.waves||{};
-  if(sid==='weston'){
-    document.getElementById('popWaves').innerHTML='<div style="font-size:12px;color:#aaa;padding:4px 0">Wave height not scored at Weston — wind is the key factor.</div>';
+  if(sid==='weston'||sid==='cycling'){
+    document.getElementById('popWaves').innerHTML='<div style="font-size:12px;color:#aaa;padding:4px 0">'+(sid==='cycling'?'No wave data for cycling.':'Wave height not scored at Weston — wind is the key factor.')+'</div>';
     document.getElementById('popWaveNote').textContent='';
   } else {
     var spotType2=(sid==='saunton_kite'||sid==='saunton_sup')?'saunton':(sid==='restbay'?'restbay':null);
@@ -757,6 +811,8 @@ function openPop(sid,di){
   // Tides
   var dusk=c.duskMins||1080;
   var tHTML='';
+  if(sid==='cycling'){document.getElementById('popTides').innerHTML='<div style="font-size:12px;color:#aaa;padding:4px 0">No tide data for cycling.</div>';}
+  else{
   if(sid==='weston')tHTML+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">HW window: 09:00–'+minsToTime(dusk+60)+' (1hr after est. dusk)</div>';
   if(sid==='restbay')tHTML+='<div style="font-size:11px;color:#aaa;margin-bottom:8px">Tide proxy: Weston · NO-GO ±1hr of HT</div>';
   var dispEvs=sid==='restbay'?c.westonEvs:c.tideEvs;
@@ -775,7 +831,8 @@ function openPop(sid,di){
     }
   } else{tHTML+='<div style="font-size:12px;color:#bbb;margin-top:4px">Tide data unavailable — check connection or try refreshing.</div>';}
   tHTML+='<a class="tide-link" href="'+EASYTIDE[sid]+'" target="_blank">View official ADMIRALTY tide times ↗</a>';
-  document.getElementById('popTides').innerHTML=tHTML;
+  if(sid!=='cycling')document.getElementById('popTides').innerHTML=tHTML;
+  } // end non-cycling
   // Verdict
   var parts=[];
   if(c.noGo)parts.push('Does not meet minimum requirements.');
@@ -818,6 +875,7 @@ function init(){
     fetchWx('weston',      51.346, -2.9878),
     fetchWx('saunton_kite',51.1059,-4.2178),
     fetchWx('restbay',     51.4878,-3.7127),
+    fetchWx('cycling',      51.4364,-2.6519),
     fetchMarine('saunton_kite',51.1059,-4.2178),
     fetchMarine('restbay', 51.4878,-3.7127),
     fetchTides('weston', AD_STATIONS.weston),
