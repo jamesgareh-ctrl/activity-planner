@@ -291,6 +291,17 @@ function swellDirMultiplier(swellDir, spotType){
   return 1.0;
 }
 
+// Period-based scaling — short period swell is significantly overestimated by models
+// Calibrated against Stormglass vs Windguru/Surfline comparison (Apr 2026)
+function periodScaleFactor(waves){
+  var period=waves.swellPeriod||waves.wavePeriod;
+  if(period==null) return 0.7; // unknown — apply moderate reduction
+  if(period>=12)   return 0.85; // long period groundswell — models reasonably accurate
+  if(period>=9)    return 0.75; // medium period — some overestimate
+  if(period>=7)    return 0.60; // short-medium — notable overestimate
+  return 0.45;                  // short choppy swell — significant overestimate
+}
+
 function waveFtForScoring(waves, scoring){
   var h=(scoring==='saunton_kite'&&waves.swellHeight!=null)?waves.swellHeight:waves.waveHeight;
   var ft=mToFt(h);
@@ -298,6 +309,8 @@ function waveFtForScoring(waves, scoring){
   // Apply swell direction multiplier — reduces effective height when swell is blocked
   var spotType=(scoring==='saunton_kite'||scoring==='saunton_sup')?'saunton':(scoring==='restbay'?'restbay':null);
   if(spotType&&waves.swellDir!=null) ft=ft*swellDirMultiplier(waves.swellDir, spotType);
+  // Apply period-based scaling — short period swell overestimated by open-ocean models
+  ft=ft*periodScaleFactor(waves);
   return ft;
 }
 
@@ -482,68 +495,18 @@ function scoreRestBay(wx,waves,tideEvs,westonTideEvs,dusk){
 // Extract weather arrays for a day
 function extractWx(json,di){
   if(!json||!json.hourly)return null;
-  var h=json.hourly;
-  var times=h.time||[];
-  // Open-Meteo returns times in local timezone (Europe/London) as YYYY-MM-DDTHH:MM
-  // Use local date string to match, not UTC
-  var d=new Date(); d.setDate(d.getDate()+di);
-  var yr=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dy=String(d.getDate()).padStart(2,'0');
-  var dayStr=yr+'-'+mo+'-'+dy;
-  var dayIndices=[];
-  for(var i=0;i<times.length;i++){
-    if(times[i]&&times[i].substring(0,10)===dayStr)dayIndices.push(i);
-  }
-  // If still empty, try the next day (handles edge cases around midnight)
-  if(!dayIndices.length){
-    var d2=new Date(d); d2.setDate(d2.getDate()+1);
-    var ds2=d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0')+'-'+String(d2.getDate()).padStart(2,'0');
-    for(var i=0;i<times.length;i++){
-      if(times[i]&&times[i].substring(0,10)===ds2)dayIndices.push(i);
-    }
-  }
-  if(!dayIndices.length){
-    // Last resort fallback
-    var b=di*24,mid=Math.min(b+11,times.length-1);
-    return{wsArr:h.wind_speed_10m||null,wdArr:h.wind_direction_10m||null,gustArr:h.wind_gusts_10m||null,
-      airTemp:h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
-      precip:avgArr(h.precipitation_probability,mid,3),
-      wxCode:h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
-      middayIdx:mid,hourlyLen:times.length,dayBase:b,
-      times:times,dayIndices:[],_ws:null,_wd:null,_gust:null,_wLabel:''};
-  }
-  // Find midday index — closest to noon
-  var midIdx=dayIndices[0],minDiff=9999;
-  dayIndices.forEach(function(i){
-    if(!times[i])return;
-    var tp=times[i].split('T');
-    if(tp.length<2)return;
-    var mins=parseInt(tp[1].substring(0,2))*60+(parseInt(tp[1].substring(3,5))||0);
-    var diff=Math.abs(mins-720);
-    if(diff<minDiff){minDiff=diff;midIdx=i;}
-  });
+  var h=json.hourly,b=di*24,mid=b+11;
   return{wsArr:h.wind_speed_10m||null,wdArr:h.wind_direction_10m||null,gustArr:h.wind_gusts_10m||null,
-    airTemp:h.temperature_2m&&h.temperature_2m[midIdx]!=null?h.temperature_2m[midIdx]:null,
-    precip:avgArr(h.precipitation_probability,midIdx,3),
-    wxCode:h.weather_code&&h.weather_code[midIdx]!=null?h.weather_code[midIdx]:null,
-    middayIdx:midIdx,hourlyLen:times.length,
-    dayBase:dayIndices[0],dayIndices:dayIndices,times:times,
+    airTemp:h.temperature_2m&&h.temperature_2m[mid]!=null?h.temperature_2m[mid]:null,
+    precip:avgArr(h.precipitation_probability,mid,3),
+    wxCode:h.weather_code&&h.weather_code[mid]!=null?h.weather_code[mid]:null,
+    middayIdx:mid,hourlyLen:(h.wind_speed_10m||[]).length,dayBase:b,
     _ws:null,_wd:null,_gust:null,_wLabel:''};
 }
 
-// Find the index in wx time array closest to a given hour (0-23) for a given day
+// Find index for a specific hour within a day
 function wxIdxForHour(wx, targetHour){
-  if(!wx||!wx.times||!wx.dayIndices||!wx.dayIndices.length) return wx?wx.middayIdx:null;
-  var best=wx.dayIndices[0], bestDiff=9999;
-  wx.dayIndices.forEach(function(i){
-    var t=wx.times[i];
-    if(!t)return;
-    var tp=t.split('T');
-    if(tp.length<2)return;
-    var h=parseInt(tp[1].substring(0,2));
-    var diff=Math.abs(h-targetHour);
-    if(diff<bestDiff){bestDiff=diff;best=i;}
-  });
-  return best;
+  return wx?wx.dayBase+targetHour:null;
 }
 
 function getTideEvs(spotId,di){
@@ -709,7 +672,7 @@ function render(){
               (function(){
                 var sType2=(sid==='restbay')?'restbay':'saunton';
                 var sd=c.waves&&(c.waves.swellDir!=null?c.waves.swellDir:c.waves.waveDir!=null?c.waves.waveDir:null);
-                var m=sd!=null?swellDirMultiplier(sd,sType2):1;
+                var m=(sd!=null?swellDirMultiplier(sd,sType2):1)*periodScaleFactor(c.waves||{});
                 var h=c.waves&&c.waves.waveHeight!=null?(Math.round(mToFt(c.waves.waveHeight)*m*10)/10).toFixed(1)+'ft':'—ft';
                 return'<div class="sc-wind">'+h+'</div>';
               })()
@@ -776,13 +739,15 @@ function openPop(sid,di){
   } else {
     var spotType2=(sid==='saunton_kite'||sid==='saunton_sup')?'saunton':(sid==='restbay'?'restbay':null);
     var popSwellDir=w.swellDir!=null?w.swellDir:(w.waveDir!=null?w.waveDir:null);
-    var popMult=spotType2&&popSwellDir!=null?swellDirMultiplier(popSwellDir,spotType2):1.0;
+    var popDirMult=spotType2&&popSwellDir!=null?swellDirMultiplier(popSwellDir,spotType2):1.0;
+    var popPeriodMult=periodScaleFactor(w);
+    var popMult=popDirMult*popPeriodMult;
     var whRawFt=mToFt(w.waveHeight);
     var whFt=whRawFt!=null?whRawFt*popMult:null;
     var swRawFt=mToFt(w.swellHeight);
     var swFt=swRawFt!=null?swRawFt*popMult:null;
     var multPct=Math.round(popMult*100);
-    var adjNote=popMult<1?' ('+multPct+'% dir adj, raw '+(whRawFt!=null?Math.round(whRawFt)+'ft':'—')+')':'';
+    var adjNote=popMult<1?' ('+multPct+'% adj, raw '+(whRawFt!=null?(Math.round(whRawFt*10)/10).toFixed(1)+'ft':'—')+')':'';
     document.getElementById('popWaves').innerHTML=
       pcell('Wave height',whFt!=null?(Math.round(whFt*10)/10).toFixed(1)+'ft':'—',adjNote)+
       pcell('Swell dir',d2dir(popSwellDir!=null?popSwellDir:w.waveDir),'','')+
