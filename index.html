@@ -466,11 +466,14 @@ function scoreRestBay(wx,waves,tideEvs,westonTideEvs,dusk){
   else if(wx){w=windAt(wx,[wx.middayIdx-1,wx.middayIdx,wx.middayIdx+1]);}
   wx._ws=w.ws;wx._wd=w.wd;wx._gust=w.gust;wx._wLabel=wLabel;
 
-  // 2. WAVE HEIGHT
-  var waveFt=mToFt(waves?waves.waveHeight:null);
-  var wvS=0,wvN=waveFt!=null?Math.round(waveFt)+'ft':'—';
-  if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+Math.round(waveFt)+'ft)');wvS=0;wvN=Math.round(waveFt)+'ft — NO-GO';}else if(waveFt<2){noGo=true;noGoReasons.push('Waves too small (~'+Math.round(waveFt*10)/10+'ft, <2ft NO-GO)');wvS=0;wvN=Math.round(waveFt*10)/10+'ft — too small';}else if(waveFt<=2.5){wvS=14;wvN=Math.round(waveFt*10)/10+'ft — ok';}else if(waveFt<=3){wvS=20;wvN=Math.round(waveFt*10)/10+'ft — good';}else if(waveFt<=4){wvS=25;wvN=Math.round(waveFt*10)/10+'ft — ideal';}else if(waveFt<=5){wvS=18;wvN=Math.round(waveFt*10)/10+'ft — getting big';}}else{wvS=12;wvN='No wave data';}
-  bd.push({label:'Wave height',score:wvS,max:25,note:wvN});tot+=wvS;wt+=25;
+  // 2. WAVE HEIGHT — use waveFtForScoring so direction+period multipliers applied before thresholds
+  var waveFt=waves?waveFtForScoring(waves,'restbay'):null;
+  var rbDirMult=waves&&waves.swellDir!=null?swellDirMultiplier(waves.swellDir,'restbay'):1;
+  var rbPeriodMult=waves?periodScaleFactor(waves):1;
+  var rbTotalMult=rbDirMult*rbPeriodMult;
+  var wvS=0,wvN=waveFt!=null?(Math.round(waveFt*10)/10).toFixed(1)+'ft':'—';
+  if(waveFt!=null){if(waveFt>5){noGo=true;noGoReasons.push('Waves too big (~'+(Math.round(waveFt*10)/10).toFixed(1)+'ft)');wvS=0;wvN=(Math.round(waveFt*10)/10).toFixed(1)+'ft — NO-GO';}else if(waveFt<2){noGo=true;noGoReasons.push('Waves too small (~'+(Math.round(waveFt*10)/10).toFixed(1)+'ft, <2ft NO-GO)');wvS=0;wvN=(Math.round(waveFt*10)/10).toFixed(1)+'ft — too small';}else if(waveFt<=2.5){wvS=14;wvN=(Math.round(waveFt*10)/10).toFixed(1)+'ft — ok';}else if(waveFt<=3){wvS=20;wvN=(Math.round(waveFt*10)/10).toFixed(1)+'ft — good';}else if(waveFt<=4){wvS=25;wvN=(Math.round(waveFt*10)/10).toFixed(1)+'ft — ideal';}else if(waveFt<=5){wvS=18;wvN=(Math.round(waveFt*10)/10).toFixed(1)+'ft — getting big';}}else{wvS=12;wvN='No wave data';}
+  bd.push({label:'Wave height',score:wvS,max:25,note:wvN+(rbTotalMult<1?' ('+Math.round(rbTotalMult*100)+'% adj)':'')});tot+=wvS;wt+=25;
 
   // 3. WIND SPEED
   var mph=toMph(w.ws),ws2=0,wn2=mph!=null?Math.round(mph)+' mph':'—';
